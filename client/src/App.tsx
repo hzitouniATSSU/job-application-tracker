@@ -1,36 +1,20 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 
-type Job = {
-  id: number;
-  company: string;
-  title: string;
-  status: string;
-  location: string | null;
-  jobUrl: string | null;
-  notes: string | null;
-  appliedAt: string;
-  createdAt: string;
-  updatedAt: string;
-};
+import type {Job} from "./types/job";
+import JobCard from "./components/JobCard";
+import ApplicationForm from "./components/ApplicationForm";
+import DocumentsPanel from "./components/DocumentsPanel";
 
-const emptyForm = {
-  company: "",
-  title: "",
-  location: "",
-  jobUrl: "",
-  notes: "",
-};
 
 function App() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [isFormOpen, setIsFormOpen]= useState(false);
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [formData, setFormData] = useState(emptyForm);
-  const [formError, setFormError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  
 
   useEffect(() => {
     async function loadJobs() {
@@ -55,36 +39,9 @@ function App() {
     loadJobs();
   }, []);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFormError("");
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch("/api/jobs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Unable to create application");
-      }
-
-      const createdJob: Job = await response.json();
-
-      setJobs((currentJobs) => [createdJob, ...currentJobs]);
-      setFormData(emptyForm);
-      setIsFormOpen(false);
-    } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : "Something went wrong"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+  function handleJobCreated(createdJob: Job){
+    setJobs((currentJobs)=> [createdJob, ...currentJobs]);
+    setIsFormOpen(false);
   }
 
   async function handleDelete(jobId: number) {
@@ -172,90 +129,7 @@ function App() {
       </header>
 
       {isFormOpen && (
-        <form className="job-form" onSubmit={handleSubmit}>
-          <h2>Add application</h2>
-
-          <div className="form-grid">
-            <label>
-              Company
-              <input
-                required
-                value={formData.company}
-                onChange={(event) =>
-                  setFormData({
-                    ...formData,
-                    company: event.target.value,
-                  })
-                }
-              />
-            </label>
-
-            <label>
-              Job title
-              <input
-                required
-                value={formData.title}
-                onChange={(event) =>
-                  setFormData({
-                    ...formData,
-                    title: event.target.value,
-                  })
-                }
-              />
-            </label>
-
-            <label>
-              Location
-              <input
-                value={formData.location}
-                onChange={(event) =>
-                  setFormData({
-                    ...formData,
-                    location: event.target.value,
-                  })
-                }
-              />
-            </label>
-
-            <label>
-              Job URL
-              <input
-                type="url"
-                value={formData.jobUrl}
-                onChange={(event) =>
-                  setFormData({
-                    ...formData,
-                    jobUrl: event.target.value,
-                  })
-                }
-              />
-            </label>
-          </div>
-
-          <label>
-            Notes
-            <textarea
-              rows={4}
-              value={formData.notes}
-              onChange={(event) =>
-                setFormData({
-                  ...formData,
-                  notes: event.target.value,
-                })
-              }
-            />
-          </label>
-
-          {formError && <p className="form-error">{formError}</p>}
-
-          <button
-            className="submit-button"
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Saving..." : "Save application"}
-          </button>
-        </form>
+        <ApplicationForm onCreated={handleJobCreated}/>
       )}
 
       {jobs.length === 0 ? (
@@ -263,48 +137,17 @@ function App() {
       ) : (
         <section className="jobs-grid">
           {jobs.map((job) => (
-            <article className="job-card" key={job.id}>
-              <div className="job-card-header">
-                <div>
-                  <h2>{job.title}</h2>
-                  <p className="company">{job.company}</p>
-                </div>
-
-                <div className="job-card-actions">
-                  <select
-                    className="status-select"
-                    value={job.status}
-                    onChange={(event) =>
-                      handleStatusChange(job.id, event.target.value)
-                    }
-                    aria-label={`Status for ${job.title} at ${job.company}`}
-                  >
-                    <option value="APPLIED">Applied</option>
-                    <option value="SCREENING">Screening</option>
-                    <option value="INTERVIEW">Interview</option>
-                    <option value="OFFER">Offer</option>
-                    <option value="REJECTED">Rejected</option>
-                    <option value="WITHDRAWN">Withdrawn</option>
-                  </select>
-                  <button
-                    className="delete-button"
-                    type="button"
-                    onClick={() => handleDelete(job.id)}
-                    aria-label={`Delete ${job.title} at ${job.company}`}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-
-              <p className="job-details">
-                <span>{job.location || "Location not provided"}</span>
-                <span>{new Date(job.appliedAt).toLocaleDateString()}</span>
-              </p>
-            </article>
+            <JobCard
+            key={job.id}
+            job={job}
+            onDelete={handleDelete}
+            onStatusChange={handleStatusChange}
+            />
           ))}
         </section>
       )}
+
+    <DocumentsPanel jobs={jobs} />
     </main>
   );
 }
