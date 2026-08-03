@@ -410,3 +410,138 @@ h1 {
   line-height: 1;
   cursor: pointer;
 }
+
+.application-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px 180px;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.application-filters label {
+  display: grid;
+  gap: 7px;
+  color: #475467;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.application-filters input,
+.application-filters select {
+  width: 100%;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  padding: 11px 12px;
+  color: #101828;
+  background: white;
+}
+
+.application-filters input:focus,
+.application-filters select:focus {
+  border-color: #2563eb;
+  outline: 3px solid rgb(37 99 235 / 12%);
+}
+
+@media (max-width: 600px) {
+  .application-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  padding: 18px 20px;
+  border: 1px solid #e4e7ec;
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 3px 10px rgb(16 24 40 / 4%);
+}
+
+.stat-card p {
+  margin: 0 0 8px;
+  color: #667085;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.stat-card strong{
+  color: #101828;
+  font-size: 1.8rem;
+}
+
+@media(max-width: 750px){
+  .stats-grid{
+    grid-template-columns: repeat(2,1fr);
+  }
+}
+
+
+.details-button {
+  border: 0;
+  padding: 4px;
+  color: #475467;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.details-button:hover {
+  color: #101828;
+  text-decoration: underline;
+}
+
+.job-expanded-details {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #eaecf0;
+}
+
+.job-expanded-details h3 {
+  margin: 0 0 5px;
+  color: #344054;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.job-expanded-details p {
+  margin: 0;
+  color: #667085;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.job-expanded-details a {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.edit-job-form {
+  margin-top: 18px;
+}
+
+.edit-form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.cancel-button {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: #344054;
+  background: white;
+  font-weight: 700;
+  cursor: pointer;
+}
