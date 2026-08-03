@@ -545,3 +545,46 @@ h1 {
   font-weight: 700;
   cursor: pointer;
 }
+
+.stage-history {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.stage-history h3 {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stage-history-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stage-history-item {
+  padding-left: 0.9rem;
+  border-left: 3px solid #2563eb;
+}
+
+.history-change {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stage-history-item time,
+.empty-history {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.stage-history-item time {
+  display: block;
+  margin-top: 0.25rem;
+}
