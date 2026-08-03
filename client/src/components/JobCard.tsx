@@ -1,18 +1,22 @@
-
-
+import { useState } from "react";
 import type { Job } from "../types/job";
+import EditApplicationForm from "./EditApplicationForm";
 
 type JobCardProps = {
   job: Job;
   onDelete: (jobId: number) => void;
   onStatusChange: (jobId: number, status: string) => void;
+  onUpdated: (job: Job) => void;
 };
 
 export default function JobCard({
   job,
   onDelete,
   onStatusChange,
+  onUpdated,
 }: JobCardProps) {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [isEditing, setIsEditing] =useState(false);
   return (
     <article className="job-card">
       <div className="job-card-header">
@@ -46,6 +50,26 @@ export default function JobCard({
           >
             Delete
           </button>
+          <button
+          className="details-button"
+          type="button"
+          onClick={() => setIsExpanded((current) => !current)}
+          aria-expanded={isExpanded}
+          >
+           {isExpanded ? "Hide details" : "View details"} 
+
+          </button>
+
+          <button
+          className="details-button"
+          type="button"
+          onClick={() => {
+            setIsEditing((current) => !current);
+            setIsExpanded(false);
+          }}
+          >
+            {isEditing ? "Close editor" : "Edit"}
+          </button>
         </div>
       </div>
 
@@ -53,6 +77,43 @@ export default function JobCard({
         <span>{job.location || "Location not provided"}</span>
         <span>{new Date(job.appliedAt).toLocaleDateString()}</span>
       </p>
+      {isEditing &&(
+        <EditApplicationForm
+        job={job}
+        onUpdated={(updatedJob) => {
+            onUpdated(updatedJob);
+            setIsEditing(false);
+        }}
+        onCancel={() => setIsEditing(false)}
+        />
+      )}
+      {isExpanded &&(
+        <div className="job-expanded-details">
+            <div>
+                <h3>Notes</h3>
+                <p>{job.notes || "No notes added."}</p>
+            </div>
+
+            <div>
+                <h3>Job Posting</h3>
+                {job.jobUrl ? (
+                    <a
+                    href="{job.jobUrl}"
+                    target="_blank"
+                    rel="noreferrer">
+                        Open job Posting
+                    </a>
+                ):(
+                    <p>No job URL provided.</p>
+                )}
+            </div>
+
+            <div>
+                <h3>Last updated</h3>
+                <p>{new Date(job.updatedAt).toLocaleString()}</p>
+            </div>
+        </div>
+      )}
     </article>
   );
 }
