@@ -12,17 +12,18 @@ datasource db {
 }
 
 model Job {
-  id        Int        @id @default(autoincrement())
-  company   String
-  title     String
-  status    String     @default("APPLIED")
-  location  String?
-  jobUrl    String?
-  notes     String?
-  documents Document[]
-  appliedAt DateTime   @default(now())
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id           Int            @id @default(autoincrement())
+  company      String
+  title        String
+  status       String         @default("APPLIED")
+  location     String?
+  jobUrl       String?
+  notes        String?
+  documents    Document[]
+  stageHistory StageHistory[]
+  appliedAt    DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }
 
 model Document {
@@ -35,4 +36,16 @@ model Document {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   jobs         Job[]
+}
+
+model StageHistory {
+  id            Int      @id @default(autoincrement())
+  jobId         Int
+  previousStage String?
+  newStage      String
+  changedAt     DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
 }

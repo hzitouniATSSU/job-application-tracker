@@ -112,6 +112,31 @@ export default function JobCard({
                 <h3>Last updated</h3>
                 <p>{new Date(job.updatedAt).toLocaleString()}</p>
             </div>
+
+            <section className="stage-history">
+  <h3>Application history</h3>
+
+  {!job.stageHistory || job.stageHistory.length === 0 ? (
+    <p className="empty-history">No stage changes recorded yet.</p>
+  ) : (
+    <ol className="stage-history-list">
+      {job.stageHistory.map((entry) => (
+        <li key={entry.id} className="stage-history-item">
+          <div className="history-change">
+            <span>{entry.previousStage ?? "Created"}</span>
+            <span aria-hidden="true">→</span>
+            <strong>{entry.newStage}</strong>
+          </div>
+
+          <time dateTime={entry.changedAt}>
+            {new Date(entry.changedAt).toLocaleString()}
+          </time>
+        </li>
+      ))}
+    </ol>
+  )}
+</section>
+
         </div>
       )}
     </article>

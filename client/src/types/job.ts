@@ -1,3 +1,14 @@
+export type StageHistory = {
+id: number;
+jobId: number;
+previousStage: string | null;
+newStage: string;
+changedAt: string
+};
+
+
+
+
 export type Job={
     id: number;
     company: string;
@@ -9,4 +20,5 @@ export type Job={
     appliedAt: string;
     createdAt: string;
     updatedAt: string;
+    stageHistory?: StageHistory[];
 };
