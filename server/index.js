@@ -1,7 +1,9 @@
 import express from "express";
 import jobsRouter from "./routes/jobs.routes.js";
 import documentsRouter from "./routes/documents.routes.js";
-import errorHandler from "./middleware/errorHandler.js";
+import errorHandler,{
+  notFound,
+} from "./middleware/errorHandler.js";
 import remindersRouter from "./routes/reminders.routes.js"
 const app = express(); 
 
@@ -9,7 +11,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
-app.use("/reminders", remindersRouter);
 
 app.get("/" , (req, res) =>{
     res.send("Job Tracker API is running!");
@@ -17,7 +18,9 @@ app.get("/" , (req, res) =>{
 
 app.use("/jobs", jobsRouter);
 app.use("/documents", documentsRouter);
+app.use("/reminders", remindersRouter);
 
+app.use(notFound);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
