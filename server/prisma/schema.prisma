@@ -21,6 +21,7 @@ model Job {
   notes        String?
   documents    Document[]
   stageHistory StageHistory[]
+  reminders    Reminder[]
   appliedAt    DateTime       @default(now())
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -48,4 +49,20 @@ model StageHistory {
   job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([jobId])
+}
+
+model Reminder {
+  id        Int      @id @default(autoincrement())
+  jobId     Int
+  type      String   @default("FOLLOW_UP")
+  title     String
+  dueAt     DateTime
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([dueAt])
 }

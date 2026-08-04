@@ -5,7 +5,7 @@ import type {Job} from "./types/job";
 import JobCard from "./components/JobCard";
 import ApplicationForm from "./components/ApplicationForm";
 import DocumentsPanel from "./components/DocumentsPanel";
-
+import RemindersPanel from "./components/RemindersPanel";
 
 function App() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -267,6 +267,7 @@ const applicationStats = [
       )}
 
     <DocumentsPanel jobs={jobs} />
+    <RemindersPanel jobs={jobs} />
     </main>
   );
 }
