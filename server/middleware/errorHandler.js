@@ -1,6 +1,12 @@
 
 import multer from "multer";
 
+export function notFound(req,res) {
+  return res.status(404).json({
+    error: `Route ${req.method} ${req.originalUrl} not found`,
+  });
+}
+
 export default function errorHandler(error, req, res, next) {
 
   if (error instanceof multer.MulterError) {
@@ -22,7 +28,14 @@ export default function errorHandler(error, req, res, next) {
   }
   console.error(error);
 
-  return res.status(500).json({
-    error: "Internal server error",
+  const statusCode = Number.isInteger(error.statusCode)
+  ? error.statusCode
+  :500;
+
+  return res.status(statusCode).json({
+    error:
+    statusCode  === 500
+    ? "Internal server error"
+    : error.message,
   });
 }
