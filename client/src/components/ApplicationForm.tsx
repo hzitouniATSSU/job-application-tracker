@@ -1,3 +1,4 @@
+import { apiUrl } from "../lib/api";
 
 
 import {
@@ -31,7 +32,7 @@ import {
       setIsSubmitting(true);
   
       try {
-        const response = await fetch("/api/jobs", {
+        const response = await fetch(apiUrl("/jobs"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -1,6 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { UploadedDocument } from "../types/document";
 import type { Job } from "../types/job";
+import { apiUrl, assetUrl} from "../lib/api";
+
+
+
+
 
 type DocumentsPanelProps = {
   jobs: Job[];
@@ -23,7 +28,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
   useEffect(() => {
     async function loadDocuments() {
       try {
-        const response = await fetch("/api/documents");
+        const response = await fetch(apiUrl("/documents"));
 
         if (!response.ok) {
           throw new Error("Unable to retrieve documents");
@@ -64,7 +69,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
     setIsUploading(true);
 
     try {
-      const response = await fetch("/api/documents", {
+      const response = await fetch(apiUrl("/documents") ,{
         method: "POST",
         body,
       });
@@ -102,7 +107,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
     }
 
     try {
-      const response = await fetch(`/api/documents/${documentId}`, {
+      const response = await fetch(apiUrl(`/documents/${documentId}`), {
         method: "DELETE",
       });
       const result = await response.json();
@@ -131,7 +136,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
 
     try {
       const response = await fetch(
-        `/api/documents/${documentId}/jobs/${jobId}`,
+        apiUrl(`/documents/${documentId}/jobs/${jobId}`),
         {
           method: "POST",
         }
@@ -175,7 +180,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
 
     try {
       const response = await fetch(
-        `/api/documents/${documentId}/jobs/${jobId}`,
+        apiUrl(`/documents/${documentId}/jobs/${jobId}`),
         {
           method: "DELETE",
         }
@@ -321,7 +326,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
 
                 <div className="document-actions">
                   <a
-                    href={`/api${document.fileUrl}`}
+                    href={assetUrl(document.fileUrl)}
                     target="_blank"
                     rel="noreferrer"
                   >

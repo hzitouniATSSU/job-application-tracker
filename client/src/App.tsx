@@ -6,6 +6,7 @@ import JobCard from "./components/JobCard";
 import ApplicationForm from "./components/ApplicationForm";
 import DocumentsPanel from "./components/DocumentsPanel";
 import RemindersPanel from "./components/RemindersPanel";
+import { apiUrl } from "./lib/api";
 
 function App() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -22,7 +23,7 @@ function App() {
   useEffect(() => {
     async function loadJobs() {
       try {
-        const response = await fetch("/api/jobs");
+        const response = await fetch(apiUrl("/jobs"));
 
         if (!response.ok) {
           throw new Error("Unable to retrieve jobs");
@@ -65,7 +66,7 @@ function App() {
     }
 
     try {
-      const response = await fetch(`/api/jobs/${jobId}`, {
+      const response = await fetch(apiUrl(`/jobs/${jobId}`), {
         method: "DELETE",
       });
 
@@ -84,7 +85,7 @@ function App() {
   }
   async function handleStatusChange(jobId: number, status: string) {
     try {
-      const response = await fetch(`/api/jobs/${jobId}`, {
+      const response = await fetch(apiUrl(`/jobs/${jobId}`), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

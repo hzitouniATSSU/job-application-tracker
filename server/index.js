@@ -1,14 +1,23 @@
 import express from "express";
+import cors from "cors";
 import jobsRouter from "./routes/jobs.routes.js";
 import documentsRouter from "./routes/documents.routes.js";
 import errorHandler,{
   notFound,
 } from "./middleware/errorHandler.js";
-import remindersRouter from "./routes/reminders.routes.js"
+import remindersRouter from "./routes/reminders.routes.js";
+
+
+
 const app = express(); 
 
 const PORT = process.env.PORT || 3000;
 
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+  }),
+);
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
