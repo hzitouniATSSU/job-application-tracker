@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Job } from "../types/job";
 import type { Reminder, ReminderType } from "../types/reminder";
+import { apiUrl } from "../lib/api";
 
 type RemindersPanelProps = {
   jobs: Job[];
@@ -24,7 +25,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
   useEffect(() => {
     async function loadReminders() {
       try {
-        const response = await fetch("/api/reminders");
+        const response = await fetch(apiUrl("/reminders"));
 
         if (!response.ok) {
           throw new Error("Unable to retrieve reminders");
@@ -56,7 +57,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
     try {
       setIsSubmitting(true);
 
-      const response = await fetch("/api/reminders", {
+      const response = await fetch(apiUrl("/reminders"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -101,7 +102,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
       setActionError("");
       setActiveReminderId(reminder.id);
 
-      const response = await fetch(`/api/reminders/${reminder.id}`, {
+      const response = await fetch(apiUrl(`/reminders/${reminder.id}`), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -146,7 +147,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
       setActionError("");
       setActiveReminderId(reminderId);
 
-      const response = await fetch(`/api/reminders/${reminderId}`, {
+      const response = await fetch(apiUrl(`/reminders/${reminderId}`), {
         method: "DELETE",
       });
 

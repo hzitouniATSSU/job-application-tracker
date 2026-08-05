@@ -6,7 +6,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --exec node --env-file=.env index.js",
-    "test": "node --test"
+    "start": "node index.js",
+    "test": "node --test",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +16,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "cors": "^2.8.6",
     "express": "^5.2.1",
     "multer": "^2.2.0",
     "pg": "^8.22.0"
