@@ -5,6 +5,17 @@ A full-stack web application for organizing job applications, tracking hiring st
 
 Built as a practical portfolio project using React, TypeScript, Express, PostgreSQL, and Prisma.
 
+## Live Demo
+- **Frontend:** https://job-application-tracker-omega-jade.vercel.app
+- **Backend API:** https://job-application-tracker-production-b5d6.up.railway.app
+- **Source code:** https://github.com/hzitouniATSSU/job-application-tracker
+
+
+
+
+
+
+
 ## Screenshots
 
 ### Application dashboard
@@ -273,8 +284,39 @@ npm run build
 - Email or calendar reminder integration
 - Expanded API integration tests
 
+## Deployment
+
+The application is deployed using:
+
+- **Frontend:** Vercel
+- **Backend:** Railway
+- **Database:** Railway PostgreSQL
+- **File storage:** Railway persistent volume
+
+### Environment variables
+
+## Client:
+
+```env
+VITE_API_URL=https://job-application-tracker-production-b5d6.up.railway.app
+```
+## Server:
+
+```env
+DATABASE_URL=your_postgresql_connection_string
+CLIENT_URL=https://job-application-tracker-omega-jade.vercel.app
+```
+
+
 ## Author
 
 **Haitam Zitouni**
 
 Computer Science graduate building practical full-stack applications and pursuing technical support and software opportunities.
+
+
+
+
+
+
+
