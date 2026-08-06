@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit"; 
 import jobsRouter from "./routes/jobs.routes.js";
 import documentsRouter from "./routes/documents.routes.js";
 import errorHandler,{
@@ -9,7 +11,26 @@ import remindersRouter from "./routes/reminders.routes.js";
 
 
 
+
 const app = express(); 
+app.set("trust proxy", 1);
+
+app.use(helmet());
+app.use(
+  express.json({
+    limit:"50Kb",
+  }),
+);
+
+const apiLimiter = rateLimit({
+  windowMs: 15*60*1000,
+  limit: 100,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    error: "Too many requests. Please try again later.",
+  },
+});
 
 const PORT = process.env.PORT || 3000;
 
@@ -25,9 +46,9 @@ app.get("/" , (req, res) =>{
     res.send("Job Tracker API is running!");
 });
 
-app.use("/jobs", jobsRouter);
-app.use("/documents", documentsRouter);
-app.use("/reminders", remindersRouter);
+app.use("/jobs",apiLimiter, jobsRouter);
+app.use("/documents",apiLimiter, documentsRouter);
+app.use("/reminders",apiLimiter, remindersRouter);
 
 app.use(notFound);
 app.use(errorHandler);
