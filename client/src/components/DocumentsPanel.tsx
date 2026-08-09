@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { UploadedDocument } from "../types/document";
 import type { Job } from "../types/job";
-import { apiUrl, assetUrl} from "../lib/api";
+import { apiFetch, assetUrl} from "../lib/api";
 
 
 
@@ -28,7 +28,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
   useEffect(() => {
     async function loadDocuments() {
       try {
-        const response = await fetch(apiUrl("/documents"));
+        const response = await apiFetch("/documents");
 
         if (!response.ok) {
           throw new Error("Unable to retrieve documents");
@@ -69,7 +69,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
     setIsUploading(true);
 
     try {
-      const response = await fetch(apiUrl("/documents") ,{
+      const response = await apiFetch("/documents" ,{
         method: "POST",
         body,
       });
@@ -107,7 +107,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
     }
 
     try {
-      const response = await fetch(apiUrl(`/documents/${documentId}`), {
+      const response = await apiFetch(`/documents/${documentId}`, {
         method: "DELETE",
       });
       const result = await response.json();
@@ -135,8 +135,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
     setLinkingDocumentId(documentId);
 
     try {
-      const response = await fetch(
-        apiUrl(`/documents/${documentId}/jobs/${jobId}`),
+      const response = await apiFetch(`/documents/${documentId}/jobs/${jobId}`,
         {
           method: "POST",
         }
@@ -179,8 +178,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
     }
 
     try {
-      const response = await fetch(
-        apiUrl(`/documents/${documentId}/jobs/${jobId}`),
+      const response = await apiFetch(`/documents/${documentId}/jobs/${jobId}`,
         {
           method: "DELETE",
         }
