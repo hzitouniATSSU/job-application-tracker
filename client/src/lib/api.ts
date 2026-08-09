@@ -18,3 +18,10 @@ export function assetUrl(path: string) {
     const normalizedPath = path.startsWith("/") ? path : `/${path}`;
     return `${API_BASE_URL}${normalizedPath}`;
 }
+
+export function apiFetch(path: string, options: RequestInit = {}){
+    return fetch(apiUrl(path),{
+        ...options,
+        credentials: "include",
+    });
+}
