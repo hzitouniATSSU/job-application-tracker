@@ -1,11 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { UploadedDocument } from "../types/document";
 import type { Job } from "../types/job";
-import { apiFetch, assetUrl} from "../lib/api";
-
-
-
-
+import { apiFetch } from "../lib/api";
 
 type DocumentsPanelProps = {
   jobs: Job[];
@@ -22,7 +18,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedJobs, setSelectedJobs] = useState<Record<number, string>>({});
   const [linkingDocumentId, setLinkingDocumentId] = useState<number | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -38,7 +34,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
         setDocuments(data);
       } catch (error) {
         setLoadError(
-          error instanceof Error ? error.message : "Something went wrong"
+          error instanceof Error ? error.message : "Something went wrong",
         );
       } finally {
         setIsLoading(false);
@@ -69,7 +65,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
     setIsUploading(true);
 
     try {
-      const response = await apiFetch("/documents" ,{
+      const response = await apiFetch("/documents", {
         method: "POST",
         body,
       });
@@ -92,10 +88,48 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
       form.reset();
     } catch (error) {
       setUploadError(
-        error instanceof Error ? error.message : "Something went wrong"
+        error instanceof Error ? error.message : "Something went wrong",
       );
     } finally {
       setIsUploading(false);
+    }
+  }
+
+  async function handleDownload(documentId: number, originalName: string) {
+    try {
+      const response = await apiFetch(`/documents/${documentId}/download`);
+
+      if (!response.ok) {
+        let message = "Unable to download document";
+
+        try {
+          const result = await response.json();
+          message = result.error || message;
+        } catch {
+          // Response may not be JSON.
+        }
+
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      const link = window.document.createElement("a");
+
+      link.href = objectUrl;
+      link.download = originalName;
+
+      window.document.body.appendChild(link);
+
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      window.alert(
+        error instanceof Error ? error.message : "Something went wrong",
+      );
     }
   }
 
@@ -115,11 +149,11 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
         throw new Error(result.error || "Unable to delete document");
       }
       setDocuments((current) =>
-        current.filter((document) => document.id !== documentId)
+        current.filter((document) => document.id !== documentId),
       );
     } catch (error) {
       window.alert(
-        error instanceof Error ? error.message : "Something went wrong"
+        error instanceof Error ? error.message : "Something went wrong",
       );
     }
   }
@@ -135,10 +169,11 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
     setLinkingDocumentId(documentId);
 
     try {
-      const response = await apiFetch(`/documents/${documentId}/jobs/${jobId}`,
+      const response = await apiFetch(
+        `/documents/${documentId}/jobs/${jobId}`,
         {
           method: "POST",
-        }
+        },
       );
 
       const result = await response.json();
@@ -151,8 +186,8 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
 
       setDocuments((current) =>
         current.map((document) =>
-          document.id === documentId ? updatedDocument : document
-        )
+          document.id === documentId ? updatedDocument : document,
+        ),
       );
 
       setSelectedJobs((current) => ({
@@ -161,7 +196,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
       }));
     } catch (error) {
       window.alert(
-        error instanceof Error ? error.message : "Something went wrong"
+        error instanceof Error ? error.message : "Something went wrong",
       );
     } finally {
       setLinkingDocumentId(null);
@@ -170,7 +205,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
 
   async function handleDetach(documentId: number, jobId: number) {
     const confirmed = window.confirm(
-      "Detach this document from the application?"
+      "Detach this document from the application?",
     );
 
     if (!confirmed) {
@@ -178,10 +213,11 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
     }
 
     try {
-      const response = await apiFetch(`/documents/${documentId}/jobs/${jobId}`,
+      const response = await apiFetch(
+        `/documents/${documentId}/jobs/${jobId}`,
         {
           method: "DELETE",
-        }
+        },
       );
 
       const result = await response.json();
@@ -194,12 +230,12 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
 
       setDocuments((current) =>
         current.map((document) =>
-          document.id === documentId ? updatedDocument : document
-        )
+          document.id === documentId ? updatedDocument : document,
+        ),
       );
     } catch (error) {
       window.alert(
-        error instanceof Error ? error.message : "Something went wrong"
+        error instanceof Error ? error.message : "Something went wrong",
       );
     }
   }
@@ -288,7 +324,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
 
                     {jobs.map((job) => {
                       const isAttached = document.jobs.some(
-                        (attachedJob) => attachedJob.id === job.id
+                        (attachedJob) => attachedJob.id === job.id,
                       );
 
                       return (
@@ -323,13 +359,14 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
                 <span>{(document.size / 1024).toFixed(1)} KB</span>
 
                 <div className="document-actions">
-                  <a
-                    href={assetUrl(document.fileUrl)}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownload(document.id, document.originalName)
+                    }
                   >
-                    Open
-                  </a>
+                    Download
+                  </button>
                   <button
                     className="delete-button"
                     type="button"

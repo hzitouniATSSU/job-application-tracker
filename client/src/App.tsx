@@ -1,15 +1,24 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
-import { apiFetch } from "./lib/api";
+import { apiFetch, clearCsrfToken } from "./lib/api";
 import type { User } from "./types/user";
 
 import AuthScreen from "./components/AuthScreen";
 import Dashboard from "./components/Dashboard";
+import ResetPasswordScreen from "./components/ResetPasswordScreen";
+import VerifyEmailScreen from "./components/VerifyEmailScreen";
 
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const searchParams = new URLSearchParams(window.location.search);
+
+  const token = searchParams.get("token");
+
+  const isResetPassword = window.location.pathname === "/reset-password";
+
+  const isVerifyEmail = window.location.pathname === "/verify-email";
 
   useEffect(() => {
     async function checkAuth() {
@@ -42,12 +51,38 @@ function App() {
         throw new Error("Unable to logout");
       }
 
+      clearCsrfToken();
+
       setCurrentUser(null);
     } catch (error) {
-      window.alert(
-        error instanceof Error ? error.message : "Unable to logout"
-      );
+      window.alert(error instanceof Error ? error.message : "Unable to logout");
     }
+  }
+
+  if (isVerifyEmail && token) {
+    return (
+      <VerifyEmailScreen
+        token={token}
+        onComplete={() => {
+          window.history.replaceState({}, "", "/");
+
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
+  if (isResetPassword && token) {
+    return (
+      <ResetPasswordScreen
+        token={token}
+        onComplete={() => {
+          window.history.replaceState({}, "", "/");
+
+          window.location.reload();
+        }}
+      />
+    );
   }
 
   if (isCheckingAuth) {
@@ -58,12 +93,7 @@ function App() {
     return <AuthScreen onAuthenticated={setCurrentUser} />;
   }
 
-  return (
-    <Dashboard
-      user={currentUser}
-      onLogout={handleLogout}
-    />
-  );
+  return <Dashboard user={currentUser} onLogout={handleLogout} />;
 }
 
 export default App;

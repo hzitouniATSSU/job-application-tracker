@@ -10,6 +10,9 @@ const allowedTypes = [
   export async function getReminders(req, res) {
     try {
       const reminders = await prisma.reminder.findMany({
+        where: {
+          userId: req.user.id,
+        },
         include: {
           job: {
             select: {
@@ -65,9 +68,10 @@ const allowedTypes = [
         });
       }
   
-      const job = await prisma.job.findUnique({
+      const job = await prisma.job.findFirst({
         where: {
           id: jobId,
+          userId: req.user.id,
         },
       });
   
@@ -83,6 +87,7 @@ const allowedTypes = [
           type,
           title: title.trim(),
           dueAt: dueDate,
+          userId: req.user.id,
         },
         include: {
           job: {
@@ -123,9 +128,10 @@ export async function updateReminder(req, res) {
         });
       }
   
-      const existingReminder = await prisma.reminder.findUnique({
+      const existingReminder = await prisma.reminder.findFirst({
         where: {
           id: reminderId,
+          userId: req.user.id,
         },
       });
   
@@ -173,9 +179,10 @@ export async function updateReminder(req, res) {
         });
       }
   
-      const existingReminder = await prisma.reminder.findUnique({
+      const existingReminder = await prisma.reminder.findFirst({
         where: {
           id: reminderId,
+          userId: req.user.id,
         },
       });
   

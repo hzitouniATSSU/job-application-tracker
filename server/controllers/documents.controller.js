@@ -5,6 +5,9 @@ import { unlink } from "fs/promises";
 export async function getDocuments(req, res) {
     try{
         const documents = await prisma.document.findMany({
+          where: {
+            userId: req.user.id,
+          },
             include:{
                 jobs: true,
             },
@@ -34,9 +37,10 @@ export async function createDocument(req, res) {
         data: {
           name: req.body.name || req.file.originalname,
           originalName: req.file.originalname,
-          fileUrl: `/uploads/${req.file.filename}`,
+          storedName: req.file.filename,
           mimeType: req.file.mimetype,
           size: req.file.size,
+          userId: req.user.id,
         },
       });
   
@@ -105,9 +109,10 @@ export async function attachDocumentToJob(req, res) {
                 error:"Invalid document or job ID",
             });
         }
-        const document = await prisma.document.findUnique({
+        const document = await prisma.document.findFirst({
             where:{
                 id:documentId,
+                userId: req.user.id,
             },
         });
         if (!document){
@@ -116,9 +121,10 @@ export async function attachDocumentToJob(req, res) {
             
         });
         }
-        const job = await prisma.job.findUnique({
+        const job = await prisma.job.findFirst({
             where:{
                 id : jobId,
+                userId: req.user.id,
             },
         });
         
@@ -130,6 +136,7 @@ export async function attachDocumentToJob(req, res) {
         const updatedDocument = await prisma.document.update({
             where:{
                 id: documentId,
+                userId: req.user.id,
             },
             data:{
                 jobs:{
@@ -163,18 +170,21 @@ export async function detachDocumentFromJob(req, res) {
         });
       }
   
-      const document = await prisma.document.findUnique({
+      const document =
+  await prisma.document.findFirst({
+    where: {
+      id: documentId,
+      userId: req.user.id,
+    },
+    include: {
+      jobs: {
         where: {
-          id: documentId,
+          id: jobId,
+          userId: req.user.id,
         },
-        include: {
-          jobs: {
-            where: {
-              id: jobId,
-            },
-          },
-        },
-      });
+      },
+    },
+  });
   
       if (!document) {
         return res.status(404).json({
@@ -184,7 +194,7 @@ export async function detachDocumentFromJob(req, res) {
   
       if (document.jobs.length === 0) {
         return res.status(404).json({
-          error: "Document is not attached to this job",
+          error: "Document or attachment not found",
         });
       }
   
@@ -215,7 +225,7 @@ export async function detachDocumentFromJob(req, res) {
   }
 
 
-  export async function getDocumentById(req, res) {
+export async function getDocumentById(req, res) {
     try {
       const documentId = Number(req.params.id);
   
@@ -225,9 +235,10 @@ export async function detachDocumentFromJob(req, res) {
         });
       }
   
-      const document = await prisma.document.findUnique({
+      const document = await prisma.document.findFirst({
         where: {
           id: documentId,
+          userId: req.user.id,
         },
         include: {
           jobs: true,
@@ -254,48 +265,113 @@ export async function detachDocumentFromJob(req, res) {
 export async function deleteDocument(req, res) {
   try {
     const documentId = Number(req.params.id);
-    if (Number.isNaN(documentId)){
+
+    if (Number.isNaN(documentId)) {
       return res.status(400).json({
-        error : "Invalid document Id",
+        error: "Invalid document ID",
       });
     }
-    const document = await prisma.document.findUnique({
+
+    const document =
+      await prisma.document.findFirst({
+        where: {
+          id: documentId,
+          userId: req.user.id,
+        },
+      });
+
+    if (!document) {
+      return res.status(404).json({
+        error: "Document not found",
+      });
+    }
+
+    await prisma.document.delete({
       where: {
         id: documentId,
       },
     });
-    if (!document){
-      return res.status(404).json({
-        error : "Document not found",
-      });
-    }
-    await prisma.document.delete({
-      where : {
-        id: documentId,
-      },
-    });
-    
-    const storedFileName = path.basename(document.fileUrl);
+
     const storedFilePath = path.join(
       process.cwd(),
-      "uploads",
-      storedFileName
+      "storage",
+      "documents",
+      document.storedName
     );
 
     try {
       await unlink(storedFilePath);
-    }catch{
-      if (FileSystemDirectoryReader.code !== "ENOENR"){
-        console.error("Unable tot delete stored file:", fileError);
+    } catch (fileError) {
+      if (fileError.code !== "ENOENT") {
+        console.error(
+          "Unable to delete stored file:",
+          fileError
+        );
       }
     }
+
     return res.status(200).json({
-      message: "Document deleted successfully"
+      message: "Document deleted successfully",
     });
-  }catch (error) {
+  } catch (error) {
     console.error(error);
+
     return res.status(500).json({
-      error:"Unable to delete document",
+      error: "Unable to delete document",
+    });
+  }
+}
+
+
+export async function downloadDocument(req, res) {
+  try {
+    const documentId = Number(req.params.id);
+
+    if (Number.isNaN(documentId)) {
+      return res.status(400).json({
+        error: "Invalid document ID",
+      });
+    }
+
+    const document =
+      await prisma.document.findFirst({
+        where: {
+          id: documentId,
+          userId: req.user.id,
+        },
+      });
+
+    if (!document) {
+      return res.status(404).json({
+        error: "Document not found",
+      });
+    }
+
+    const storedFilePath = path.join(
+      process.cwd(),
+      "storage",
+      "documents",
+      document.storedName
+    );
+
+    return res.download(
+      storedFilePath,
+      document.originalName,
+      (error) => {
+        if (error && !res.headersSent) {
+          console.error(error);
+
+          return res.status(404).json({
+            error: "Stored file not found",
+          });
+        }
+      }
+    );
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Unable to download document",
     });
   }
 }
