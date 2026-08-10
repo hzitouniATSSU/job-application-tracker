@@ -9,3 +9,6 @@ uploads/
 CVSAMPLE.pdf
 
 docs/screenshots/
+
+storage/documents/*
+!storage/documents/.gitkeep

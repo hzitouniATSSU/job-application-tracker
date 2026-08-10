@@ -8,6 +8,10 @@ import errorHandler,{
   notFound,
 } from "./middleware/errorHandler.js";
 import remindersRouter from "./routes/reminders.routes.js";
+import authRouter from "./routes/auth.routes.js";
+import cookieParser from "cookie-parser";
+import requireAuth from "./middleware/requireAuth.js";
+import { requireCsrf } from "./middleware/csrf.js";
 
 
 
@@ -38,18 +42,23 @@ const PORT = process.env.PORT || 3000;
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
   }),
 );
-app.use(express.json());
-app.use("/uploads", express.static("uploads"));
+
+app.use(cookieParser());
+
 
 app.get("/" , (req, res) =>{
     res.send("Job Tracker API is running!");
 });
 
-app.use("/jobs",apiLimiter, jobsRouter);
-app.use("/documents",apiLimiter, documentsRouter);
-app.use("/reminders",apiLimiter, remindersRouter);
+app.use("/auth", authRouter);
+
+app.use("/jobs",apiLimiter,requireAuth,requireCsrf, jobsRouter);
+app.use("/documents",apiLimiter,requireAuth,requireCsrf, documentsRouter);
+app.use("/reminders",apiLimiter,requireAuth,requireCsrf, remindersRouter);
+
 
 app.use(notFound);
 app.use(errorHandler);

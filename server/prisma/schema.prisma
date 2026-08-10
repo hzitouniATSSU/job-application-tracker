@@ -11,6 +11,27 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+
+  emailVerifiedAt DateTime?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+
+  passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens  EmailVerificationToken[]
+
+  jobs                Job[]
+  documents           Document[]
+  reminders           Reminder[]
+  
+  
+}
+
 model Job {
   id           Int            @id @default(autoincrement())
   company      String
@@ -25,18 +46,24 @@ model Job {
   appliedAt    DateTime       @default(now())
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+  userId       Int
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Document {
   id           Int      @id @default(autoincrement())
   name         String
   originalName String
-  fileUrl      String
+  storedName   String
   mimeType     String   @map("mimetype")
   size         Int
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  jobs         Job[]
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  jobs Job[]
 }
 
 model StageHistory {
@@ -63,6 +90,35 @@ model Reminder {
 
   job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([jobId])
   @@index([dueAt])
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }

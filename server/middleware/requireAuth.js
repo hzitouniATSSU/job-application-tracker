@@ -1,0 +1,32 @@
+import { verifyAccessToken } from "../lib/auth.js";
+
+export default function requireAuth(req, res, next) {
+  const token = req.cookies.session;
+
+  if (!token) {
+    return res.status(401).json({
+      error: "Authentication required",
+    });
+  }
+
+  try {
+    const payload = verifyAccessToken(token);
+    const userId = Number(payload.sub);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(401).json({
+        error: "Invalid session",
+      });
+    }
+
+    req.user = {
+      id: userId,
+    };
+
+    return next();
+  } catch {
+    return res.status(401).json({
+      error: "Invalid or expired session",
+    });
+  }
+}

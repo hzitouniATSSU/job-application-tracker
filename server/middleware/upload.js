@@ -1,7 +1,7 @@
-
 import multer from "multer";
 import path from "path";
 import { randomUUID } from "crypto";
+import fs from "fs";
 
 const allowedMimeTypes = [
   "application/pdf",
@@ -9,13 +9,23 @@ const allowedMimeTypes = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
+const uploadDirectory = path.join(
+  process.cwd(),
+  "storage",
+  "documents"
+);
+
+fs.mkdirSync(uploadDirectory, {
+  recursive: true,
+});
+
 const storage = multer.diskStorage({
   destination(req, file, callback) {
-    callback(null, "uploads/");
+    callback(null, uploadDirectory);
   },
 
   filename(req, file, callback) {
-    const extension = path.extname(file.originalname);
+    const extension = path.extname(file.originalname).toLowerCase();
     const uniqueName = `${randomUUID()}${extension}`;
 
     callback(null, uniqueName);

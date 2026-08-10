@@ -1,8 +1,13 @@
 import prisma from "../lib/prisma.js";
 
 export async function getJobs(req, res) {
+  
   try{
+    
   const jobs = await prisma.job.findMany({
+    where: {
+      userId: req.user.id,
+    },
   include:{
     stageHistory: {
       orderBy: {
@@ -38,6 +43,11 @@ export async function createJob(req, res) {
             newStage: "APPLIED",
           },
         },
+        user:{
+          connect:{
+            id: req.user.id,
+          },
+        },
       },
       include: {
         stageHistory: {
@@ -68,9 +78,10 @@ export async function getJobById(req, res) {
       });
     }
 
-    const job = await prisma.job.findUnique({
+    const job = await prisma.job.findFirst({
       where: {
         id: jobId,
+        userId: req.user.id,
       },
       include: {
         documents: true,
@@ -131,9 +142,10 @@ export async function updateJob(req, res) {
       });
     }
 
-    const job = await prisma.job.findUnique({
+    const job = await prisma.job.findFirst({
       where: {
         id: jobId,
+        userId: req.user.id,
       },
     });
 
@@ -198,9 +210,10 @@ export async function deleteJob(req, res) {
       });
     }
 
-    const job = await prisma.job.findUnique({
+    const job = await prisma.job.findFirst({
       where: {
         id: jobId,
+        userId: req.user.id,
       },
     });
 
