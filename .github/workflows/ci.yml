@@ -36,6 +36,7 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/job_application_tracker_test
       JWT_SECRET: github-actions-test-secret
       CLIENT_URL: http://localhost:5173
+      RESEND_API_KEY: re_test_dummy_key
 
     steps:
       - name: Checkout repository
