@@ -1,9 +1,11 @@
 
 # Job Application Tracker
 
-A full-stack web application for organizing job applications, tracking hiring stages, managing resume documents, and scheduling follow-up reminders.
+![CI](https://github.com/hztouniATSSU/job-application-tracker/actions/workflows/ci.yml/badge.svg)
 
-Built as a practical portfolio project using React, TypeScript, Express, PostgreSQL, and Prisma.
+A full-stack job search management platform for organizing applications, tracking hiring stages, managing private documents, and scheduling follow-up reminders.
+
+Built with React, TypeScript, Node.js, Express, PostgreSQL, and Prisma, with secure authentication, per-user data isolation, automated integration testing, structured logging, and production error monitoring.
 
 ## Live Demo
 - **Frontend:** https://job-application-tracker-omega-jade.vercel.app
@@ -18,19 +20,43 @@ Built as a practical portfolio project using React, TypeScript, Express, Postgre
 
 ## Screenshots
 
+### Overview
+
+![Dashboard Overview](docs/screenshots/dashboard-overview.png)
+
 ### Application dashboard
 
-![Application dashboard](docs/screenshots/dashboard.png)
+![Application dashboard](docs/screenshots/application-form-1.png)
+![Application Form](docs/screenshots/application-form-3.png) 
 
 ### Application details and stage history
 
-![Application details](docs/screenshots/application-details.png)
+![Application details](docs/screenshots/application-form-2.png)
 
 ### Follow-up reminders
 
-![Reminders](docs/screenshots/reminders.png)
+![Reminders](docs/screenshots/reminders-panel.png)
+
+### Documents
+
+![Documents](docs/screenshots/documents-panel.png)
+
+### Settings
+
+![Settings](docs/screenshots/setting-panel.png)
+
 
 ## Features
+
+### Authentication and accounts
+
+- User registration and login
+- Secure cookie-based sessions
+- Email verification
+- Resend verification emails
+- Forgot-password and password-reset flow
+- User-specific private application data
+- Account settings
 
 ### Application management
 
@@ -76,6 +102,22 @@ Built as a practical portfolio project using React, TypeScript, Express, Postgre
 - Prisma migrations
 - Automated middleware tests
 
+## Security
+
+- Secure cookie-based authentication
+- Password hashing with bcrypt
+- Email verification
+- Password reset using expiring, hashed reset tokens
+- CSRF protection for authenticated mutations
+- Rate limiting
+- Security headers with Helmet
+- Per-user authorization and data isolation
+- Ownership validation for applications, documents, and reminders
+- Restricted document file types and upload sizes
+- Secure authentication cookie configuration
+- Generic authentication responses to reduce account enumeration
+
+
 ## Technology stack
 
 ### Frontend
@@ -91,6 +133,8 @@ Built as a practical portfolio project using React, TypeScript, Express, Postgre
 - Express
 - Multer
 - Prisma ORM
+- Pino / pino-http
+- Sentry
 
 ### Database
 
@@ -98,18 +142,25 @@ Built as a practical portfolio project using React, TypeScript, Express, Postgre
 
 ### Testing
 
-- Node.js built-in test runner
-- `node:assert`
+- Vitest
+- Supertest
+- Automated unit and integration tests
+- PostgreSQL test database
+- Multi-user authorization/isolation tests
+
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    UI["React + TypeScript"] --> API["Express API"]
-    API --> Controllers["Controllers"]
+    UI["React + TypeScript"] --> API["Express REST API"]
+    API --> Auth["Authentication & Security Middleware"]
+    Auth --> Controllers["Controllers"]
     Controllers --> Prisma["Prisma ORM"]
-    Prisma --> Database["PostgreSQL"]
-    API --> Uploads["Document storage"]
+    Prisma --> DB["PostgreSQL"]
+    Controllers --> Storage["Private Document Storage"]
+    API --> Logging["Pino Logging"]
+    API --> Monitoring["Sentry Monitoring"]
 ```
 
 ## Project structure
@@ -217,7 +268,7 @@ Run backend unit tests:
 
 ```bash
 cd server
-npm test
+npx vitest run --mode test
 ```
 
 Create a production frontend build:
@@ -228,6 +279,19 @@ npm run build
 ```
 
 ## API endpoints
+
+### Authentication
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/auth/register` | Create an account |
+| `POST` | `/auth/login` | Sign in |
+| `GET` | `/auth/me` | Retrieve the authenticated user |
+| `POST` | `/auth/logout` | Sign out |
+| `POST` | `/auth/forgot-password` | Request a password reset |
+| `POST` | `/auth/reset-password` | Reset a password |
+| `POST` | `/auth/verify-email` | Verify an email address |
+| `POST` | `/auth/resend-verification` | Resend verification email |
 
 ### Applications
 
@@ -260,29 +324,31 @@ npm run build
 
 ## Engineering highlights
 
-- Status updates and history records are written in one database transaction.
-- Invalid input is rejected before reaching Prisma.
-- Uploaded files are restricted by type and size.
-- Application history and document relationships use relational database models.
-- React state updates immediately after successful API operations.
-- Unit tests verify validation and error-handling behavior.
+- Multi-user architecture with server-side ownership checks for private resources.
+- Automated integration tests verify that one user cannot read, modify, or delete another user's data.
+- Application status updates and stage-history records are committed atomically using Prisma transactions.
+- Authentication uses secure cookies with CSRF protection for state-changing requests.
+- Password reset and email verification tokens are cryptographically generated, hashed before storage, and expire automatically.
+- Document uploads enforce ownership, file-type, and file-size restrictions.
+- Centralized Express error handling provides consistent API responses.
+- Pino provides structured application and HTTP logging.
+- Sentry provides production exception monitoring.
+- PostgreSQL schema changes are managed through Prisma migrations.
+
 
 ## Current limitations
 
-- The application currently operates as a single-user system.
-- Uploaded files use local server storage during development.
-- Authentication and authorization are not yet implemented.
-- Production deployment requires persistent cloud file storage.
+- Email reminders are not currently sent automatically.
+- Document storage depends on the configured server/cloud storage provider.
+- The application does not currently integrate directly with external job boards.
+- Advanced analytics and reporting are planned for future versions.
 
 ## Roadmap
 
-- User authentication and authorization
-- User-specific application data
-- Recruiter and interviewer contacts
-- Additional analytics and charts
-- Cloud document storage
-- Email or calendar reminder integration
-- Expanded API integration tests
+- Cloud object storage for uploaded documents
+- Email/calendar reminder integration
+- Additional dashboard analytics
+- Recruiter and interviewer contact tracking
 
 ## Deployment
 
