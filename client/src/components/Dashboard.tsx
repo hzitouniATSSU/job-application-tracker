@@ -20,10 +20,12 @@ function Dashboard({ user, onLogout }: DashboardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-
-  const [searchQuery] = useState("");
-  const [statusFilter] = useState("ALL");
-  const [sortOrder] = useState("NEWEST");
+  const [activeView, setActiveView] = useState<
+  "overview" | "applications" | "documents" | "reminders"
+>("overview");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [sortOrder, setSortOrder] = useState("NEWEST");
 
   useEffect(() => {
     async function loadJobs() {
@@ -226,81 +228,220 @@ function Dashboard({ user, onLogout }: DashboardProps) {
   }
 
   return (
-    <main className="app-shell">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">
-            Job search workspace
-          </p>
+  <div className="dashboard-layout">
+    {/* SIDEBAR */}
+    <aside className="sidebar">
+      <div className="sidebar-brand">
+        <span className="brand-mark">JT</span>
+        <span>JobTrack</span>
+      </div>
 
-          <h1>Applications</h1>
+      <nav
+        className="sidebar-nav"
+        aria-label="Dashboard navigation"
+      >
+        <button
+          type="button"
+          className={
+            activeView === "overview"
+              ? "active"
+              : ""
+          }
+          onClick={() =>
+            setActiveView("overview")
+          }
+        >
+          <span className="nav-icon">⌂</span>
+          Overview
+        </button>
 
-          <p className="application-count">
-            {jobs.length}{" "}
-            {jobs.length === 1
-              ? "application"
-              : "applications"}{" "}
-            tracked
-          </p>
+        <button
+          type="button"
+          className={
+            activeView === "applications"
+              ? "active"
+              : ""
+          }
+          onClick={() =>
+            setActiveView("applications")
+          }
+        >
+          <span className="nav-icon">▣</span>
+          <span>Applications</span>
+          {jobs.length > 0 && (
+      <span className="nav-count">
+        {jobs.length}
+      </span>
+    )}
+        </button>
 
-          <p>Signed in as {user.email}</p>
+        <button
+          type="button"
+          className={
+            activeView === "documents"
+              ? "active"
+              : ""
+          }
+          onClick={() =>
+            setActiveView("documents")
+          }
+        >
+          <span className="nav-icon">▤</span>
+    <span>Documents</span>
+          
+        </button>
+
+        <button
+          type="button"
+          className={
+            activeView === "reminders"
+              ? "active"
+              : ""
+          }
+          onClick={() =>
+            setActiveView("reminders")
+          }
+        >
+          <span className="nav-icon">◷</span>
+    <span>Reminders</span>
+          
+        </button>
+      </nav>
+    </aside>
+
+    {/* RIGHT SIDE */}
+    <div className="dashboard-main">
+      {/* TOP BAR */}
+      <header className="topbar">
+        <p className="topbar-label">
+          Job search workspace
+        </p>
+
+        <div className="topbar-user">
+          <div className="user-avatar">
+            {user.email.charAt(0).toUpperCase()}
+          </div>
+          <div className="user-details">
+            <span className="user-email">
+              {user.email}
+            </span>
+
+            <span className="user-status">
+               Signed in 
+            </span>
+          </div>
+          
+
+          <button
+            className="logout-button"
+            type="button"
+            onClick={onLogout}
+          >
+            Logout
+          </button>
         </div>
-
-     <div className="header-actions">
-  <button
-    className="logout-button"
-    type="button"
-    onClick={onLogout}
-  >
-    Logout
-  </button>
-
-  <button
-    className="add-button"
-    type="button"
-    onClick={() =>
-      setIsFormOpen((current) => !current)
-    }
-  >
-    {isFormOpen
-      ? "Cancel"
-      : "+ Add application"}
-  </button>
-</div>
       </header>
 
-      <section
-        className="stats-grid"
-        aria-label="Application statistics"
+      {/* PAGE CONTENT */}
+      <main className="dashboard-content">
+
+        {/* =========================
+            OVERVIEW
+        ========================== */}
+
+        {activeView === "overview" && (
+          <>
+            <header className="page-header">
+              <div>
+                <p className="eyebrow">
+                  Dashboard
+                </p>
+
+                <h1>
+                  Job search overview
+                </h1>
+
+                <p className="application-count">
+                  {jobs.length}{" "}
+                  {jobs.length === 1
+                    ? "application"
+                    : "applications"}{" "}
+                  tracked
+                </p>
+              </div>
+
+              <button
+                className="add-button"
+                type="button"
+                onClick={() => {
+                  setActiveView(
+                    "applications"
+                  );
+                  setIsFormOpen(true);
+                }}
+              >
+                + Add application
+              </button>
+            </header>
+
+            <section
+              className="stats-grid"
+              aria-label="Application statistics"
+            >
+              {applicationStats.map(
+                (stat) => (
+                  <article
+                    className="stat-card"
+                    key={stat.label}
+                  >
+                    <p>{stat.label}</p>
+
+                    <strong>
+                      {stat.value}
+                    </strong>
+                  </article>
+                )
+              )}
+            </section>
+
+            <section className="overview-grid">
+  <div className="overview-card">
+    <div className="section-header">
+      <div>
+        <p className="eyebrow">
+          Recent activity
+        </p>
+
+        <h2>
+          Recent applications
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        className="text-button"
+        onClick={() =>
+          setActiveView("applications")
+        }
       >
-        {applicationStats.map((stat) => (
-          <article
-            className="stat-card"
-            key={stat.label}
-          >
-            <p>{stat.label}</p>
-            <strong>{stat.value}</strong>
-          </article>
-        ))}
-      </section>
+        View all
+      </button>
+    </div>
 
-      {isFormOpen && (
-        <ApplicationForm
-          onCreated={handleJobCreated}
-        />
-      )}
+    {jobs.length === 0 ? (
+      <div className="empty-state">
+        <h3>No applications yet</h3>
 
-      {jobs.length === 0 ? (
-        <p className="message">
-          No job applications yet.
+        <p>
+          Add your first job application to start
+          tracking your search.
         </p>
-      ) : filteredJobs.length === 0 ? (
-        <p className="message">
-          No application matches your filter.
-        </p>
-      ) : (
-        <section className="jobs-grid">
-          {filteredJobs.map((job) => (
+      </div>
+    ) : (
+      <section className="jobs-grid">
+        {jobs
+          .slice(0, 3)
+          .map((job) => (
             <JobCard
               key={job.id}
               job={job}
@@ -309,14 +450,273 @@ function Dashboard({ user, onLogout }: DashboardProps) {
               onUpdated={handleJobUpdated}
             />
           ))}
-        </section>
-      )}
+      </section>
+    )}
+  </div>
+  <div className="overview-card">
+    <div className="section-header">
+      <div>
+        <p className="eyebrow">
+          Schedule
+        </p>
 
-      <DocumentsPanel jobs={jobs} />
+        <h2>
+          Upcoming reminders
+        </h2>
+      </div>
+      <button
+      type="button"
+      className="text-button"
+      onClick={()=>
+      setActiveView("reminders")
+      }
+      >
+        View all
+      </button>
+    </div>
+    <div className="empty-state compact ">
+      <h3>
+        No upcoming reminders
+      </h3>
 
-      <RemindersPanel jobs={jobs} />
-    </main>
-  );
+      <p>
+        Add a follow-up, interview,
+        or application deadline.
+      </p>
+    </div>
+  </div>
+</section>
+          </>
+        )}
+
+        {/* =========================
+            APPLICATIONS
+        ========================== */}
+
+        {activeView ===
+          "applications" && (
+          <>
+            <header className="page-header">
+              <div>
+                <p className="eyebrow">
+                  Job search
+                </p>
+
+                <h1>Applications</h1>
+
+                <p className="application-count">
+                  {jobs.length}{" "}
+                  {jobs.length === 1
+                    ? "application"
+                    : "applications"}{" "}
+                  tracked
+                </p>
+              </div>
+
+              <button
+                className="add-button"
+                type="button"
+                onClick={() =>
+                  setIsFormOpen(
+                    (current) =>
+                      !current
+                  )
+                }
+              >
+                {isFormOpen
+                  ? "Cancel"
+                  : "+ Add application"}
+              </button>
+            </header>
+
+            <section
+              className="stats-grid"
+              aria-label="Application statistics"
+            >
+              {applicationStats.map(
+                (stat) => (
+                  <article
+                    className="stat-card"
+                    key={stat.label}
+                  >
+                    <p>{stat.label}</p>
+
+                    <strong>
+                      {stat.value}
+                    </strong>
+                  </article>
+                )
+              )}
+            </section>
+
+            {isFormOpen && (
+              <ApplicationForm
+                onCreated={
+                  handleJobCreated
+                }
+              />
+            )}
+
+            <section className="applications-toolbar" aria-label="Filter applications">
+              <label className="application-search">
+                <span className="visually-hidden">Search applications</span>
+                <span className="search-icon" aria-hidden="true">⌕</span>
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search company, role, or location"
+                />
+              </label>
+
+              <div className="status-filters" aria-label="Filter by status">
+                {["ALL", "APPLIED", "SCREENING", "INTERVIEW", "OFFER", "REJECTED", "WITHDRAWN"].map(
+                  (status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      className={`filter-pill ${statusFilter === status ? "active" : ""}`}
+                      aria-pressed={statusFilter === status}
+                      onClick={() => setStatusFilter(status)}
+                    >
+                      {status === "ALL"
+                        ? "All"
+                        : status.charAt(0) + status.slice(1).toLowerCase()}
+                    </button>
+                  )
+                )}
+              </div>
+
+              <label className="sort-control">
+                <span>Sort</span>
+                <select
+                  value={sortOrder}
+                  onChange={(event) => setSortOrder(event.target.value)}
+                >
+                  <option value="NEWEST">Newest first</option>
+                  <option value="OLDEST">Oldest first</option>
+                  <option value="COMPANY">Company A–Z</option>
+                </select>
+              </label>
+            </section>
+
+            {(searchQuery || statusFilter !== "ALL") && (
+              <p className="filter-results" aria-live="polite">
+                Showing {filteredJobs.length} of {jobs.length} applications
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("ALL");
+                  }}
+                >
+                  Clear filters
+                </button>
+              </p>
+            )}
+
+            {jobs.length === 0 ? (
+              <div className="empty-state">
+                <h3>
+                  No applications yet
+                </h3>
+
+                <p>
+                  Add your first application
+                  to start tracking your job
+                  search.
+                </p>
+              </div>
+            ) : filteredJobs.length ===
+              0 ? (
+              <div className="empty-state">
+                <h3>
+                  No matching applications
+                </h3>
+
+                <p>
+                  Try changing your search
+                  or filters.
+                </p>
+              </div>
+            ) : (
+              <section className="jobs-grid">
+                {filteredJobs.map(
+                  (job) => (
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      onDelete={
+                        handleDelete
+                      }
+                      onStatusChange={
+                        handleStatusChange
+                      }
+                      onUpdated={
+                        handleJobUpdated
+                      }
+                    />
+                  )
+                )}
+              </section>
+            )}
+          </>
+        )}
+
+        {/* =========================
+            DOCUMENTS
+        ========================== */}
+
+        {activeView === "documents" && (
+          <>
+            <header className="page-header">
+              <div>
+                <p className="eyebrow">
+                  Document library
+                </p>
+
+                <h1>Documents</h1>
+
+                <p className="application-count">
+                  Manage resumes, cover
+                  letters, and application
+                  documents.
+                </p>
+              </div>
+            </header>
+
+            <DocumentsPanel jobs={jobs} />
+          </>
+        )}
+
+        {/* =========================
+            REMINDERS
+        ========================== */}
+
+        {activeView === "reminders" && (
+          <>
+            <header className="page-header">
+              <div>
+                <p className="eyebrow">
+                  Schedule
+                </p>
+
+                <h1>Reminders</h1>
+
+                <p className="application-count">
+                  Keep track of interviews,
+                  deadlines and follow-ups.
+                </p>
+              </div>
+            </header>
+
+            <RemindersPanel jobs={jobs} />
+          </>
+        )}
+      </main>
+    </div>
+  </div>
+);
 }
 
 export default Dashboard;

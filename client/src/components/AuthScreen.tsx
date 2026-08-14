@@ -6,52 +6,126 @@ type AuthScreenProps = {
   onAuthenticated: (user: User) => void;
 };
 
-export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
-  const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
+export default function AuthScreen({
+  onAuthenticated,
+}: AuthScreenProps) {
+  const [mode, setMode] = useState<
+    "login" | "register" | "forgot"
+  >("login");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
+
     setError("");
     setMessage("");
     setIsSubmitting(true);
 
     try {
       const response = await apiFetch(
-        mode === "login" ? "/auth/login" : "/auth/register",
+        mode === "login"
+          ? "/auth/login"
+          : "/auth/register",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email, password }),
-        },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+        }
       );
+
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error ?? "Unable to continue");
+        throw new Error(
+          data.error ?? "Unable to continue"
+        );
       }
 
       if (mode === "register") {
-        setMessage("Account created. Please sign in ");
+        setMessage(
+          data.message ||
+            "Account created. Check your email to verify your account, then sign in."
+        );
         setMode("login");
         setPassword("");
         return;
       }
+
       onAuthenticated(data.user);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Something went wrong");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong"
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function handleForgotPassword(event: FormEvent<HTMLFormElement>) {
+  async function handleResendVerification() {
+    setError("");
+    setMessage("");
+
+    const emailToVerify = email.trim();
+
+    if (!emailToVerify) {
+      setError("Enter your email address first.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await apiFetch(
+        "/auth/resend-verification",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: emailToVerify,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Unable to resend verification email"
+        );
+      }
+
+      setMessage(data.message);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleForgotPassword(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     setError("");
@@ -59,23 +133,32 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await apiFetch("/auth/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+      const response = await apiFetch(
+        "/auth/forgot-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error ?? "Unable to continue");
+        throw new Error(
+          data.error ?? "Unable to continue"
+        );
       }
 
       setMessage(data.message);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Something went wrong");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -85,34 +168,55 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
     return (
       <main className="auth-shell">
         <section className="auth-card">
-          <p className="eyebrow">Job search workspace</p>
+          <p className="eyebrow">
+            Job search workspace
+          </p>
 
           <h1>Reset your password</h1>
 
           <p>
-            Enter your email address and we'll send password reset instructions
-            if an account exists.
+            Enter your email address and we'll send
+            password reset instructions if an account
+            exists.
           </p>
 
-          <form onSubmit={handleForgotPassword} className="auth-form">
+          <form
+            onSubmit={handleForgotPassword}
+            className="auth-form"
+          >
             <label>
               <span>Email</span>
 
               <input
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
                 autoComplete="email"
                 required
               />
             </label>
 
-            {error && <p className="message error">{error}</p>}
+            {error && (
+              <p className="message error">
+                {error}
+              </p>
+            )}
 
-            {message && <p className="message">{message}</p>}
+            {message && (
+              <p className="message">
+                {message}
+              </p>
+            )}
 
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Please wait" : "Send reset link"}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? "Please wait"
+                : "Send reset link"}
             </button>
           </form>
 
@@ -135,16 +239,29 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
   return (
     <main className="auth-shell">
       <section className="auth-card">
-        <p className="eyebrow">Job search workspace</p>
-        <h1>{mode === "login" ? "Welcome back" : "Create an account"}</h1>
+        <p className="eyebrow">
+          Job search workspace
+        </p>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <h1>
+          {mode === "login"
+            ? "Welcome back"
+            : "Create an account"}
+        </h1>
+
+        <form
+          onSubmit={handleSubmit}
+          className="auth-form"
+        >
           <label>
             <span>Email</span>
+
             <input
               type="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) =>
+                setEmail(event.target.value)
+              }
               autoComplete="email"
               required
             />
@@ -152,12 +269,17 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
 
           <label>
             <span>Password</span>
+
             <input
               type="password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
               autoComplete={
-                mode === "login" ? "current-password" : "new-password"
+                mode === "login"
+                  ? "current-password"
+                  : "new-password"
               }
               minLength={12}
               required
@@ -178,15 +300,27 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             </button>
           )}
 
-          {error && <p className="message error">{error}</p>}
-          {message && <p className="message">{message}</p>}
+          {error && (
+            <p className="message error">
+              {error}
+            </p>
+          )}
 
-          <button type="submit" disabled={isSubmitting}>
+          {message && (
+            <p className="message">
+              {message}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+          >
             {isSubmitting
-              ? "Please Wait"
+              ? "Please wait"
               : mode === "login"
-                ? "Sign in"
-                : "Create an account"}
+              ? "Sign in"
+              : "Create an account"}
           </button>
         </form>
 
@@ -194,15 +328,32 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
           type="button"
           className="text-button"
           onClick={() => {
-            setMode(mode === "login" ? "register" : "login");
+            setMode(
+              mode === "login"
+                ? "register"
+                : "login"
+            );
             setError("");
             setMessage("");
           }}
         >
           {mode === "login"
             ? "Need an account? Register"
-            : "Already have an account ? Sign in "}
+            : "Already have an account? Sign in"}
         </button>
+
+        {mode === "login" && (
+          <button
+            type="button"
+            className="text-button"
+            onClick={handleResendVerification}
+            disabled={isSubmitting}
+          >
+            {isSubmitting
+              ? "Sending..."
+              : "Resend verification email"}
+          </button>
+        )}
       </section>
     </main>
   );

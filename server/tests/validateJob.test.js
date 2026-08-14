@@ -1,11 +1,9 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { test, expect } from "vitest";
 
 import {
   validateCreateJob,
   validateUpdateJob,
 } from "../middleware/validateJob.js";
-import { title } from "node:process";
 
 function createResponse() {
   return {
@@ -39,39 +37,35 @@ test("create validation rejects an empty company", () => {
     nextCalled = true;
   });
 
-  assert.equal(res.statusCode, 400);
+  expect(res.statusCode).toBe(400);
 
-  assert.deepEqual(res.body, {
+  expect(res.body).toEqual({
     error: "Company is required",
   });
 
-  assert.equal(nextCalled, false);
+  expect(nextCalled).toBe(false);
 });
 
 test("create validation accepts a valid job", () => {
   const req = {
     body: {
       company: "  Canonical  ",
-
       title: "  Support Engineer  ",
-
       location: "Remote",
     },
   };
 
   const res = createResponse();
-
   let nextCalled = false;
 
   validateCreateJob(req, res, () => {
     nextCalled = true;
   });
 
-  assert.equal(nextCalled, true);
+  expect(nextCalled).toBe(true);
 
-  assert.equal(req.body.company, "Canonical");
-
-  assert.equal(req.body.title, "Support Engineer");
+  expect(req.body.company).toBe("Canonical");
+  expect(req.body.title).toBe("Support Engineer");
 });
 
 test("update validation rejects an invalid status", () => {
@@ -82,20 +76,19 @@ test("update validation rejects an invalid status", () => {
   };
 
   const res = createResponse();
-
   let nextCalled = false;
 
   validateUpdateJob(req, res, () => {
     nextCalled = true;
   });
 
-  assert.equal(res.statusCode, 400);
+  expect(res.statusCode).toBe(400);
 
-  assert.deepEqual(res.body, {
+  expect(res.body).toEqual({
     error: "Invalid application status",
   });
 
-  assert.equal(nextCalled, false);
+  expect(nextCalled).toBe(false);
 });
 
 test("update validation accepts a valid status", () => {
@@ -106,14 +99,12 @@ test("update validation accepts a valid status", () => {
   };
 
   const res = createResponse();
-
   let nextCalled = false;
 
   validateUpdateJob(req, res, () => {
     nextCalled = true;
   });
 
-  assert.equal(nextCalled, true);
-
-  assert.equal(res.statusCode, 200);
+  expect(nextCalled).toBe(true);
+  expect(res.statusCode).toBe(200);
 });
