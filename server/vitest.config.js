@@ -8,8 +8,11 @@ export default defineConfig(({ mode }) => {
     ""
   );
 
-  Object.assign(process.env, env);
-
+for (const [key, value] of Object.entries(env)) {
+  if (process.env[key] === undefined) {
+    process.env[key] = value;
+  }
+}
   return {
     test: {
       environment: "node",
