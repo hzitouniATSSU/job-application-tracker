@@ -46,7 +46,8 @@ export default function errorHandler(
 
   if (
     error.message ===
-    "Only PDF, DOC, and DOCX files are allowed"
+    "Only PDF, DOC, and DOCX files are allowed" ||
+    error.message === "Only JPEG, PNG, and WebP images are allowed"
   ) {
     req.log?.warn(
       {

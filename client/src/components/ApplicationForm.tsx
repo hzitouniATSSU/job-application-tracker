@@ -110,7 +110,7 @@ import {
           <label>
             Job URL
             <input
-              type="url"
+              type="text"
               value={formData.jobUrl}
               onChange={(event) =>
                 setFormData({

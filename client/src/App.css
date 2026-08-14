@@ -1531,6 +1531,65 @@ input {
   font-weight: 800;
 }
 
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.settings-stack {
+  display: grid;
+  gap: 24px;
+  max-width: 760px;
+  margin-top: 32px;
+}
+
+.settings-card {
+  display: grid;
+  gap: 24px;
+  padding: 28px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+}
+
+.settings-card h2 { margin: 4px 0 0; }
+.settings-description { margin: 8px 0 0; color: #64748b; }
+.profile-photo-editor { display: flex; align-items: center; gap: 18px; }
+.profile-avatar { width: 72px; height: 72px; flex: 0 0 auto; font-size: 24px; }
+.photo-picker { display: grid; gap: 7px; color: #334155; font-weight: 700; }
+.photo-picker small { color: #64748b; font-weight: 400; }
+.settings-field { display: grid; gap: 8px; color: #334155; font-weight: 700; }
+.settings-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font: inherit;
+}
+.settings-field input:disabled { background: #f8fafc; color: #64748b; }
+.settings-save { width: fit-content; }
+.danger-zone { border-color: #fecaca; }
+.delete-account-button {
+  width: fit-content;
+  padding: 11px 16px;
+  border: 1px solid #dc2626;
+  border-radius: 10px;
+  background: #fff;
+  color: #dc2626;
+  font-weight: 700;
+  cursor: pointer;
+}
+.delete-account-button:hover { background: #fef2f2; }
+.delete-account-button:disabled { opacity: .6; cursor: not-allowed; }
+
+@media (max-width: 600px) {
+  .profile-photo-editor { align-items: flex-start; flex-direction: column; }
+  .settings-card { padding: 22px; }
+}
+
 .user-details {
   display: flex;
   flex-direction: column;

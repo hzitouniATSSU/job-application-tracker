@@ -117,6 +117,19 @@ Built with React, TypeScript, Node.js, Express, PostgreSQL, and Prisma, with sec
 - Secure authentication cookie configuration
 - Generic authentication responses to reduce account enumeration
 
+## Continuous Integration
+
+GitHub Actions runs automatically on pushes and pull requests to verify the application before changes are merged.
+
+The CI pipeline:
+
+- Installs backend and frontend dependencies
+- Provisions PostgreSQL for integration testing
+- Applies the Prisma database schema
+- Generates the Prisma client
+- Runs backend unit and integration tests
+- Builds the React frontend for production
+
 
 ## Technology stack
 
@@ -140,13 +153,15 @@ Built with React, TypeScript, Node.js, Express, PostgreSQL, and Prisma, with sec
 
 - PostgreSQL
 
-### Testing
+### Testing & CI
 
 - Vitest
 - Supertest
 - Automated unit and integration tests
 - PostgreSQL test database
 - Multi-user authorization/isolation tests
+- GitHub Actions continuous integration
+- Automated backend tests and frontend production builds on pushes and pull requests
 
 
 ## Architecture
@@ -167,6 +182,9 @@ flowchart TD
 
 ```text
 job-application-tracker/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── client/
 │   └── src/
 │       ├── components/
@@ -182,7 +200,6 @@ job-application-tracker/
 │   │   └── schema.prisma
 │   ├── routes/
 │   ├── tests/
-│   ├── uploads/
 │   └── index.js
 ├── docs/
 │   └── screenshots/
@@ -219,6 +236,11 @@ Update `server/.env` with your PostgreSQL credentials:
 ```env
 DATABASE_URL="postgresql://USERNAME:PASSWORD@localhost:5432/job_tracker?schema=public"
 PORT=3000
+
+Copy the example environment configuration:
+
+```bash
+cp .env.example .env
 ```
 
 Create the PostgreSQL database:
@@ -334,7 +356,7 @@ npm run build
 - Pino provides structured application and HTTP logging.
 - Sentry provides production exception monitoring.
 - PostgreSQL schema changes are managed through Prisma migrations.
-
+- GitHub Actions automatically runs backend tests and verifies the frontend production build on every push and pull request.
 
 ## Current limitations
 

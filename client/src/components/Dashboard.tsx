@@ -1,27 +1,34 @@
 import { useEffect, useState } from "react";
 
-import { apiFetch } from "../lib/api";
+import { apiFetch, apiUrl } from "../lib/api";
 
 import type { User } from "../types/user";
 import type { Job } from "../types/job";
+import type { Reminder } from "../types/reminder";
 
 import JobCard from "./JobCard";
 import ApplicationForm from "./ApplicationForm";
 import DocumentsPanel from "./DocumentsPanel";
 import RemindersPanel from "./RemindersPanel";
+import SettingsPanel from "./SettingsPanel";
 
 type DashboardProps = {
   user: User;
   onLogout: () => void;
+  onUserUpdated: (user: User) => void;
+  onAccountDeleted: () => void;
 };
 
-function Dashboard({ user, onLogout }: DashboardProps) {
+function Dashboard({ user, onLogout, onUserUpdated, onAccountDeleted }: DashboardProps) {
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [areRemindersLoading, setAreRemindersLoading] = useState(true);
+  const [remindersLoadError, setRemindersLoadError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [activeView, setActiveView] = useState<
-  "overview" | "applications" | "documents" | "reminders"
+  "overview" | "applications" | "documents" | "reminders" | "settings"
 >("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -51,6 +58,29 @@ function Dashboard({ user, onLogout }: DashboardProps) {
     }
 
     loadJobs();
+  }, []);
+
+  useEffect(() => {
+    async function loadReminders() {
+      try {
+        const response = await apiFetch("/reminders");
+
+        if (!response.ok) {
+          throw new Error("Unable to retrieve reminders");
+        }
+
+        const data: Reminder[] = await response.json();
+        setReminders(data);
+      } catch (error) {
+        setRemindersLoadError(
+          error instanceof Error ? error.message : "Something went wrong"
+        );
+      } finally {
+        setAreRemindersLoading(false);
+      }
+    }
+
+    loadReminders();
   }, []);
 
   function handleJobCreated(createdJob: Job) {
@@ -306,6 +336,15 @@ function Dashboard({ user, onLogout }: DashboardProps) {
     <span>Reminders</span>
           
         </button>
+
+        <button
+          type="button"
+          className={activeView === "settings" ? "active" : ""}
+          onClick={() => setActiveView("settings")}
+        >
+          <span className="nav-icon">⚙</span>
+          <span>Settings</span>
+        </button>
       </nav>
     </aside>
 
@@ -319,15 +358,22 @@ function Dashboard({ user, onLogout }: DashboardProps) {
 
         <div className="topbar-user">
           <div className="user-avatar">
-            {user.email.charAt(0).toUpperCase()}
+            {user.hasProfilePhoto ? (
+              <img
+                src={`${apiUrl("/auth/profile/photo")}?v=${encodeURIComponent(user.updatedAt)}`}
+                alt=""
+              />
+            ) : (
+              (user.name || user.email).charAt(0).toUpperCase()
+            )}
           </div>
           <div className="user-details">
             <span className="user-email">
-              {user.email}
+              {user.name || user.email}
             </span>
 
             <span className="user-status">
-               Signed in 
+               Signed in as {user.email}
             </span>
           </div>
           
@@ -474,16 +520,50 @@ function Dashboard({ user, onLogout }: DashboardProps) {
         View all
       </button>
     </div>
-    <div className="empty-state compact ">
-      <h3>
-        No upcoming reminders
-      </h3>
+    {areRemindersLoading ? (
+      <p className="message">Loading reminders...</p>
+    ) : remindersLoadError ? (
+      <p className="message error">{remindersLoadError}</p>
+    ) : reminders.filter((reminder) => !reminder.completed).length === 0 ? (
+      <div className="empty-state compact">
+        <h3>No upcoming reminders</h3>
 
-      <p>
-        Add a follow-up, interview,
-        or application deadline.
-      </p>
-    </div>
+        <p>
+          Add a follow-up, interview,
+          or application deadline.
+        </p>
+      </div>
+    ) : (
+      <ul className="reminder-list">
+        {reminders
+          .filter((reminder) => !reminder.completed)
+          .sort(
+            (first, second) =>
+              new Date(first.dueAt).getTime() - new Date(second.dueAt).getTime()
+          )
+          .slice(0, 3)
+          .map((reminder) => (
+            <li key={reminder.id} className="reminder-item">
+              <div className="reminder-content">
+                <div className="reminder-title-row">
+                  <strong>{reminder.title}</strong>
+                  <span className="reminder-type">
+                    {reminder.type.replace("_", " ")}
+                  </span>
+                </div>
+                <span className="reminder-job">
+                  {reminder.job.company} — {reminder.job.title}
+                </span>
+                <div className="reminder-date-row">
+                  <time dateTime={reminder.dueAt}>
+                    {new Date(reminder.dueAt).toLocaleString()}
+                  </time>
+                </div>
+              </div>
+            </li>
+          ))}
+      </ul>
+    )}
   </div>
 </section>
           </>
@@ -710,7 +790,30 @@ function Dashboard({ user, onLogout }: DashboardProps) {
               </div>
             </header>
 
-            <RemindersPanel jobs={jobs} />
+            <RemindersPanel
+              jobs={jobs}
+              reminders={reminders}
+              isLoading={areRemindersLoading}
+              loadError={remindersLoadError}
+              onRemindersChange={setReminders}
+            />
+          </>
+        )}
+
+        {activeView === "settings" && (
+          <>
+            <header className="page-header">
+              <div>
+                <p className="eyebrow">Account</p>
+                <h1>Settings</h1>
+                <p className="application-count">Manage your profile and account.</p>
+              </div>
+            </header>
+            <SettingsPanel
+              user={user}
+              onUserUpdated={onUserUpdated}
+              onAccountDeleted={onAccountDeleted}
+            />
           </>
         )}
       </main>
