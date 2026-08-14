@@ -1,7 +1,7 @@
 
 # Job Application Tracker
 
-![CI](https://github.com/hztouniATSSU/job-application-tracker/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/hzitouniATSSU/job-application-tracker/actions/workflows/ci.yml/badge.svg)
 
 A full-stack job search management platform for organizing applications, tracking hiring stages, managing private documents, and scheduling follow-up reminders.
 
