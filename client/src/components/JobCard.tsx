@@ -27,7 +27,7 @@ export default function JobCard({
 
         <div className="job-card-actions">
           <select
-            className="status-select"
+            className={`status-select status-${job.status.toLowerCase()}`}
             value={job.status}
             onChange={(event) =>
               onStatusChange(job.id, event.target.value)
@@ -98,7 +98,7 @@ export default function JobCard({
                 <h3>Job Posting</h3>
                 {job.jobUrl ? (
                     <a
-                    href="{job.jobUrl}"
+                    href={job.jobUrl}
                     target="_blank"
                     rel="noreferrer">
                         Open job Posting

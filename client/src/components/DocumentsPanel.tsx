@@ -242,10 +242,7 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
   return (
     <section className="documents-panel">
       <div className="section-heading">
-        <div>
-          <p className="eyebrow">Document library</p>
-          <h2>Documents</h2>
-        </div>
+        
 
         <span>{documents.length} stored</span>
       </div>
@@ -289,94 +286,139 @@ export default function DocumentsPanel({ jobs }: DocumentsPanelProps) {
         <div className="documents-list">
           {documents.map((document) => (
             <article className="document-row" key={document.id}>
-              <div>
-                <h3>{document.name}</h3>
-                <p>{document.originalName}</p>
-                {document.jobs.length > 0 && (
-                  <div className="attached-jobs">
-                    <span>Attached to:</span>
-                    {document.jobs.map((job) => (
-                      <span className="attached-jobs" key={job.id}>
-                        {job.company} — {job.title}
-                        <button
-                          type="button"
-                          onClick={() => handleDetach(document.id, job.id)}
-                          aria-label={`Detach from ${job.company} ${job.title}`}
-                        >
-                          x
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+  <div className="document-main">
+    <div className="document-icon">
+      {document.originalName
+        .split(".")
+        .pop()
+        ?.toUpperCase()}
+    </div>
 
-                <div className="document-linker">
-                  <select
-                    value={selectedJobs[document.id] || ""}
-                    onChange={(event) =>
-                      setSelectedJobs((current) => ({
-                        ...current,
-                        [document.id]: event.target.value,
-                      }))
-                    }
-                  >
-                    <option value="">Select application</option>
+    <div className="document-info">
+      <div className="document-title-row">
+        <div>
+          <h3>{document.name}</h3>
 
-                    {jobs.map((job) => {
-                      const isAttached = document.jobs.some(
-                        (attachedJob) => attachedJob.id === job.id,
-                      );
+          <p>{document.originalName}</p>
+        </div>
 
-                      return (
-                        <option
-                          key={job.id}
-                          value={job.id}
-                          disabled={isAttached}
-                        >
-                          {job.company} — {job.title}
-                          {isAttached ? " (attached)" : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
+        <span className="document-size">
+          {(document.size / 1024).toFixed(1)} KB
+        </span>
+      </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleAttach(document.id)}
-                    disabled={
-                      !selectedJobs[document.id] ||
-                      linkingDocumentId === document.id
-                    }
-                  >
-                    {linkingDocumentId === document.id
-                      ? "Attaching..."
-                      : "Attach"}
-                  </button>
-                </div>
+      {document.jobs.length > 0 && (
+        <div className="document-attachments">
+          <span className="attachment-label">
+            Attached to
+          </span>
+
+          <div className="attachment-tags">
+            {document.jobs.map((job) => (
+              <div
+                className="attachment-tag"
+                key={job.id}
+              >
+                <span>
+                  {job.company} — {job.title}
+                </span>
+
+                <button
+                  type="button"
+                  className="attachment-remove"
+                  onClick={() =>
+                    handleDetach(document.id, job.id)
+                  }
+                  aria-label={`Detach from ${job.company} ${job.title}`}
+                >
+                  ×
+                </button>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-              <div className="document-meta">
-                <span>{(document.size / 1024).toFixed(1)} KB</span>
+      <div className="document-linker">
+        <select
+          value={selectedJobs[document.id] || ""}
+          onChange={(event) =>
+            setSelectedJobs((current) => ({
+              ...current,
+              [document.id]: event.target.value,
+            }))
+          }
+        >
+          <option value="">
+            Select application
+          </option>
 
-                <div className="document-actions">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleDownload(document.id, document.originalName)
-                    }
-                  >
-                    Download
-                  </button>
-                  <button
-                    className="delete-button"
-                    type="button"
-                    onClick={() => handleDelete(document.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </article>
+          {jobs.map((job) => {
+            const isAttached =
+              document.jobs.some(
+                (attachedJob) =>
+                  attachedJob.id === job.id
+              );
+
+            return (
+              <option
+                key={job.id}
+                value={job.id}
+                disabled={isAttached}
+              >
+                {job.company} — {job.title}
+                {isAttached
+                  ? " (attached)"
+                  : ""}
+              </option>
+            );
+          })}
+        </select>
+
+        <button
+          type="button"
+          className="secondary-action-button"
+          onClick={() =>
+            handleAttach(document.id)
+          }
+          disabled={
+            !selectedJobs[document.id] ||
+            linkingDocumentId === document.id
+          }
+        >
+          {linkingDocumentId === document.id
+            ? "Attaching..."
+            : "Attach"}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div className="document-actions">
+    <button
+      type="button"
+      className="download-button"
+      onClick={() =>
+        handleDownload(
+          document.id,
+          document.originalName
+        )
+      }
+    >
+      Download
+    </button>
+
+    <button
+      className="delete-button"
+      type="button"
+      onClick={() =>
+        handleDelete(document.id)
+      }
+    >
+      Delete
+    </button>
+  </div>
+</article>
           ))}
         </div>
       )}

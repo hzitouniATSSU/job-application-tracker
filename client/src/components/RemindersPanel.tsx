@@ -179,8 +179,16 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
 
   return (
     <section className="reminders-panel">
+      <div className= "section-header">
+      
+
+       <span className="section-count">
+      {reminders.length} total
+    </span>
+  </div>
+
       <form className="reminder-form" onSubmit={handleSubmit}>
-        <label>
+        <label className="form-field">
           <span>Application</span>
           <select
             value={selectedJobId}
@@ -197,7 +205,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
           </select>
         </label>
 
-        <label>
+        <label className="form-field">
           <span>Reminder type</span>
           <select
             value={type}
@@ -210,7 +218,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
           </select>
         </label>
 
-        <label>
+        <label className="form-field">
           <span>Title</span>
           <input
             type="text"
@@ -221,7 +229,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
           />
         </label>
 
-        <label>
+        <label className="form-field">
           <span>Due date and time</span>
           <input
             type="datetime-local"
@@ -231,23 +239,26 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
           />
         </label>
 
-        <button type="submit" disabled={isSubmitting}>
+        <button className="primary-button reminder-submit" type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Saving..." : "Add reminder"}
         </button>
 
         {submitError && <p className="message error">{submitError}</p>}
       </form>
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Schedule</p>
-          <h2>Reminders</h2>
-        </div>
-
-        <span>{reminders.length} total</span>
-      </div>
-
+      
       {reminders.length === 0 ? (
-        <p className="message">No reminders scheduled yet.</p>
+  <div className="empty-state">
+    <div className="empty-state-icon">
+      ✓
+    </div>
+
+    <h3>No reminders yet</h3>
+
+    <p>
+      Schedule a follow-up, interview,
+      or application deadline.
+    </p>
+  </div>
       ) : (
         <>
         {actionError && (
@@ -282,10 +293,14 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
                     </span>
                   </div>
 
-                  <span>
+                  <span className="reminder-job">
                     {reminder.job.company} — {reminder.job.title}
                   </span>
+                   
+                  </div>
 
+
+                  <div className="reminder-date-row">
                   <time dateTime={reminder.dueAt}>
                     {new Date(reminder.dueAt).toLocaleString()}
                   </time>

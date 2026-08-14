@@ -5,6 +5,7 @@ import {
   createAccessToken,
 } from "../lib/auth.js";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
+import { cleanupExpiredAuthTokens } from "../lib/tokenCleanup.js";
 
 import { createCsrfToken } from "../middleware/csrf.js";
 import crypto from "crypto";
@@ -91,10 +92,21 @@ export async function register(req, res, next) {
         verificationToken: rawVerificationToken,
       });
     } catch (emailError) {
-      console.error("Unable to send verification email:", emailError);
+      req.log.error(
+    {
+      err: emailError,
+      userId: user.id,
+    },
+      "Unable to send verification email:", emailError
+  );
     }
+    req.log.info(
+  {
+    userId: user.id,
+  },
+  "User registered"
+);
 
-    
     return res.status(201).json({ user, message:
     "Account created. Check your email to verify your account, then sign in.", });
   } catch (error) {
@@ -105,7 +117,7 @@ export async function register(req, res, next) {
       });
     }
 
-    next(error);
+    return next(error);
   }
 }
 
@@ -140,6 +152,13 @@ export async function login(req, res, next) {
 
     setSessionCookie(res, user.id);
 
+    req.log.info(
+  {
+    userId: user.id,
+  },
+  "User logged in"
+);
+    
     return res.status(200).json({
       user: {
         id: user.id,
@@ -173,7 +192,7 @@ export async function getCurrentUser(req, res, next) {
     }
     return res.status(200).json({ user });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 }
 
@@ -192,6 +211,13 @@ export function logout(req, res) {
     sameSite: isProduction ? "none" : "lax",
     path: "/",
   });
+
+  req.log.info(
+    {
+      userId: req.user?.id,
+    },
+    "User logged out"
+  );
 
   return res.status(204).send();
 }
@@ -216,6 +242,8 @@ export function getCsrfToken(req, res) {
 
 export async function forgotPassword(req, res, next) {
   try {
+
+await cleanupExpiredAuthTokens();
     const email =
       typeof req.body.email === "string"
         ? req.body.email.trim().toLowerCase()
@@ -273,12 +301,13 @@ export async function forgotPassword(req, res, next) {
 
     return res.status(200).json(genericResponse);
   } catch (error) {
-    next(error);
+    return next(error);
   }
 }
 
 export async function resetPassword(req, res, next) {
   try {
+    await cleanupExpiredAuthTokens();
     const token =
       typeof req.body.token === "string" ? req.body.token.trim() : "";
 
@@ -303,9 +332,7 @@ export async function resetPassword(req, res, next) {
       where: {
         tokenHash,
       },
-      include: {
-        user: true,
-      },
+      
     });
 
     if (!resetToken || resetToken.expiresAt <= new Date()) {
@@ -342,30 +369,47 @@ export async function resetPassword(req, res, next) {
     ]);
 
     res.clearCookie("session", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      path: "/",
-    });
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite:
+    process.env.NODE_ENV === "production"
+      ? "none"
+      : "lax",
+  path: "/",
+});
 
-    res.clearCookie("csrfToken", {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      path: "/",
-    });
+res.clearCookie("csrfToken", {
+  httpOnly: false,
+  secure: process.env.NODE_ENV === "production",
+  sameSite:
+    process.env.NODE_ENV === "production"
+      ? "none"
+      : "lax",
+  path: "/",
+});
 
-    return res.status(200).json({
-      message:
-        "Password reset successfully. Please sign in with your new password.",
-    });
+req.log.info(
+  {
+    userId: resetToken.userId,
+  },
+  "Password reset completed"
+);
+
+return res.status(200).json({
+  message:
+    "Password reset successfully. Please sign in with your new password.",
+});
+
+   
   } catch (error) {
-    next(error);
+    return next(error);
   }
 }
 
 export async function verifyEmail(req, res, next) {
   try {
+    await cleanupExpiredAuthTokens();
+
     const token =
       typeof req.body.token === "string"
         ? req.body.token.trim()
@@ -423,10 +467,101 @@ export async function verifyEmail(req, res, next) {
       }),
     ]);
 
+    req.log.info(
+      {
+        userId: verificationToken.userId,
+      },
+      "Email verification completed"
+    );
+
     return res.status(200).json({
       message: "Email verified successfully. You can now sign in.",
     });
   } catch (error) {
-    next(error);
+    return next(error);
+  }
+}
+
+export async function resendVerificationEmail(req, res, next) {
+  try {
+    await cleanupExpiredAuthTokens();
+
+    const email =
+      typeof req.body.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
+
+    const genericResponse = {
+      message:
+        "If the account exists and is not verified, a verification email will be sent.",
+    };
+
+    if (!email) {
+      return res.status(200).json(genericResponse);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+        email: true,
+        emailVerifiedAt: true,
+      },
+    });
+
+    // Same outward response prevents account enumeration.
+    if (!user) {
+      return res.status(200).json(genericResponse);
+    }
+
+    if (user.emailVerifiedAt) {
+  return res.status(200).json(genericResponse);
+}
+
+    const rawVerificationToken =
+      crypto.randomBytes(32).toString("hex");
+
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawVerificationToken)
+      .digest("hex");
+
+    const expiresAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000
+    );
+
+    await prisma.$transaction([
+      prisma.emailVerificationToken.deleteMany({
+        where: {
+          userId: user.id,
+        },
+      }),
+
+      prisma.emailVerificationToken.create({
+        data: {
+          tokenHash,
+          expiresAt,
+          userId: user.id,
+        },
+      }),
+    ]);
+
+    await sendVerificationEmail({
+      to: user.email,
+      verificationToken: rawVerificationToken,
+    });
+
+    req.log.info(
+      {
+        userId: user.id,
+      },
+      "Verification email resent"
+    );
+
+    return res.status(200).json(genericResponse);
+  } catch (error) {
+    return next(error);
   }
 }

@@ -1,8 +1,9 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { test, expect } from "vitest";
 import multer from "multer";
 
-import errorHandler, { notFound } from "../middleware/errorHandler.js";
+import errorHandler, {
+  notFound,
+} from "../middleware/errorHandler.js";
 
 function createResponse() {
   return {
@@ -32,14 +33,17 @@ test("notFound returns a JSON 404 response", () => {
 
   notFound(req, res);
 
-  assert.equal(res.statusCode, 404);
-  assert.deepEqual(res.body, {
+  expect(res.statusCode).toBe(404);
+
+  expect(res.body).toEqual({
     error: "Route GET /missing-route not found",
   });
 });
 
 test("errorHandler handles Multer file-size errors", () => {
-  const error = new multer.MulterError("LIMIT_FILE_SIZE");
+  const error = new multer.MulterError(
+    "LIMIT_FILE_SIZE"
+  );
 
   const res = createResponse();
   let nextCalled = false;
@@ -48,11 +52,13 @@ test("errorHandler handles Multer file-size errors", () => {
     nextCalled = true;
   });
 
-  assert.equal(res.statusCode, 400);
-  assert.deepEqual(res.body, {
+  expect(res.statusCode).toBe(400);
+
+  expect(res.body).toEqual({
     error: "File must be 5 MB or smaller",
   });
-  assert.equal(nextCalled, false);
+
+  expect(nextCalled).toBe(false);
 });
 
 test("errorHandler returns a custom safe error", () => {
@@ -63,8 +69,9 @@ test("errorHandler returns a custom safe error", () => {
 
   errorHandler(error, {}, res, () => {});
 
-  assert.equal(res.statusCode, 400);
-  assert.deepEqual(res.body, {
+  expect(res.statusCode).toBe(400);
+
+  expect(res.body).toEqual({
     error: "Invalid request",
   });
 });

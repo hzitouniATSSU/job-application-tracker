@@ -1,53 +1,10 @@
 import prisma from "../lib/prisma.js";
 
-export async function getJobs(req, res) {
-  
-  try{
-    
-  const jobs = await prisma.job.findMany({
-    where: {
-      userId: req.user.id,
-    },
-  include:{
-    stageHistory: {
-      orderBy: {
-        changedAt: "desc", 
-      },
-    },
-  },
-});
-
-  return res.json(jobs);
-}catch(error){
-  console.error(error);
-  return res.status(500).json({
-    error:"Unable to retrieve jobs",
-  });
-}
-}
-
-export async function createJob(req, res) {
+export async function getJobs(req, res, next) {
   try {
-    const { company, title, location, jobUrl, notes } = req.body;
-
-    const job = await prisma.job.create({
-      data: {
-        company,
-        title,
-        location,
-        jobUrl,
-        notes,
-        stageHistory: {
-          create: {
-            previousStage: null,
-            newStage: "APPLIED",
-          },
-        },
-        user:{
-          connect:{
-            id: req.user.id,
-          },
-        },
+    const jobs = await prisma.job.findMany({
+      where: {
+        userId: req.user.id,
       },
       include: {
         stageHistory: {
@@ -58,17 +15,60 @@ export async function createJob(req, res) {
       },
     });
 
-    res.status(201).json(job);
+    return res.json(jobs);
   } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      error: "Unable to create job",
-    });
+    return next(error);
   }
 }
 
-export async function getJobById(req, res) {
+export async function createJob(req, res, next) {
+  try {
+    const {
+      company,
+      title,
+      location,
+      jobUrl,
+      notes,
+    } = req.body;
+
+    const job = await prisma.job.create({
+      data: {
+        company,
+        title,
+        location,
+        jobUrl,
+        notes,
+
+        stageHistory: {
+          create: {
+            previousStage: null,
+            newStage: "APPLIED",
+          },
+        },
+
+        user: {
+          connect: {
+            id: req.user.id,
+          },
+        },
+      },
+
+      include: {
+        stageHistory: {
+          orderBy: {
+            changedAt: "desc",
+          },
+        },
+      },
+    });
+
+    return res.status(201).json(job);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getJobById(req, res, next) {
   try {
     const jobId = Number(req.params.id);
 
@@ -83,8 +83,10 @@ export async function getJobById(req, res) {
         id: jobId,
         userId: req.user.id,
       },
+
       include: {
         documents: true,
+
         stageHistory: {
           orderBy: {
             changedAt: "desc",
@@ -101,17 +103,14 @@ export async function getJobById(req, res) {
 
     return res.status(200).json(job);
   } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      error: "Unable to retrieve job",
-    });
+    return next(error);
   }
 }
 
-export async function updateJob(req, res) {
+export async function updateJob(req, res, next) {
   try {
     const jobId = Number(req.params.id);
+
     if (Number.isNaN(jobId)) {
       return res.status(400).json({
         error: "Invalid job ID",
@@ -156,51 +155,53 @@ export async function updateJob(req, res) {
     }
 
     const statusChanged =
-      updates.status !== undefined && updates.status !== job.status;
+      updates.status !== undefined &&
+      updates.status !== job.status;
 
-    const updatedJob = await prisma.$transaction(async (transaction) => {
-       await transaction.job.update({
-        where: {
-          id: jobId,
-        },
-        data: updates,
-      });
+    const updatedJob = await prisma.$transaction(
+      async (transaction) => {
+        await transaction.job.update({
+          where: {
+            id: jobId,
+            userId: req.user.id,
+          },
+          data: updates,
+        });
 
-      if (statusChanged) {
-        await transaction.stageHistory.create({
-          data: {
-            jobId,
-            previousStage: job.status,
-            newStage: updates.status,
+        if (statusChanged) {
+          await transaction.stageHistory.create({
+            data: {
+              jobId,
+              previousStage: job.status,
+              newStage: updates.status,
+            },
+          });
+        }
+
+        return transaction.job.findFirst({
+          where: {
+            id: jobId,
+            userId: req.user.id,
+          },
+
+          include: {
+            stageHistory: {
+              orderBy: {
+                changedAt: "desc",
+              },
+            },
           },
         });
       }
+    );
 
-      return transaction.job.findUnique({
-        where: {
-          id: jobId,
-        },
-        include:{
-          stageHistory: {
-            orderBy: {
-              changedAt: "desc", 
-            },
-          },
-        },
-
-      });
-    });
     return res.status(200).json(updatedJob);
   } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      error: "Unable to update job",
-    });
+    return next(error);
   }
 }
 
-export async function deleteJob(req, res) {
+export async function deleteJob(req, res, next) {
   try {
     const jobId = Number(req.params.id);
 
@@ -226,6 +227,7 @@ export async function deleteJob(req, res) {
     await prisma.job.delete({
       where: {
         id: jobId,
+        userId: req.user.id,
       },
     });
 
@@ -233,10 +235,6 @@ export async function deleteJob(req, res) {
       message: "Job deleted successfully",
     });
   } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      error: "Unable to delete job",
-    });
+    return next(error);
   }
 }
