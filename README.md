@@ -168,14 +168,14 @@ The CI pipeline:
 
 ```mermaid
 flowchart TD
-    UI["React + TypeScript"] --> API["Express REST API"]
-    API --> Auth["Authentication & Security Middleware"]
-    Auth --> Controllers["Controllers"]
-    Controllers --> Prisma["Prisma ORM"]
-    Prisma --> DB["PostgreSQL"]
-    Controllers --> Storage["Private Document Storage"]
-    API --> Logging["Pino Logging"]
-    API --> Monitoring["Sentry Monitoring"]
+    UI[React + TypeScript] --> API[Express REST API]
+    API --> AUTH[Authentication and Security Middleware]
+    AUTH --> CONTROLLERS[Controllers]
+    CONTROLLERS --> PRISMA[Prisma ORM]
+    PRISMA --> DB[PostgreSQL]
+    CONTROLLERS --> STORAGE[Private Document Storage]
+    API --> LOGGING[Pino Logging]
+    API --> MONITORING[Sentry Monitoring]
 ```
 
 ## Project structure
