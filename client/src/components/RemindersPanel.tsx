@@ -1,16 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Job } from "../types/job";
 import type { Reminder, ReminderType } from "../types/reminder";
 import { apiFetch } from "../lib/api";
 
 type RemindersPanelProps = {
   jobs: Job[];
+  reminders: Reminder[];
+  isLoading: boolean;
+  loadError: string;
+  onRemindersChange: React.Dispatch<React.SetStateAction<Reminder[]>>;
 };
 
-export default function RemindersPanel({ jobs }: RemindersPanelProps) {
-  const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
+export default function RemindersPanel({
+  jobs,
+  reminders,
+  isLoading,
+  loadError,
+  onRemindersChange,
+}: RemindersPanelProps) {
   const [selectedJobId, setSelectedJobId] = useState(
     jobs[0]?.id.toString() ?? ""
   );
@@ -21,29 +28,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
   const [activeReminderId, setActiveReminderId] = useState<number | null>(null);
-
-  useEffect(() => {
-    async function loadReminders() {
-      try {
-        const response = await apiFetch("/reminders");
-
-        if (!response.ok) {
-          throw new Error("Unable to retrieve reminders");
-        }
-
-        const data: Reminder[] = await response.json();
-        setReminders(data);
-      } catch (error) {
-        setLoadError(
-          error instanceof Error ? error.message : "Something went wrong"
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadReminders();
-  }, []);
+  const [currentTime] = useState(Date.now);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,7 +63,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
 
       const createdReminder = data as Reminder;
 
-      setReminders((currentReminders) =>
+      onRemindersChange((currentReminders) =>
         [...currentReminders, createdReminder].sort(
           (first, second) =>
             new Date(first.dueAt).getTime() - new Date(second.dueAt).getTime()
@@ -120,7 +105,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
 
       const updatedReminder = data as Reminder;
 
-      setReminders((currentReminders) =>
+      onRemindersChange((currentReminders) =>
         currentReminders.map((currentReminder) =>
           currentReminder.id === updatedReminder.id
             ? updatedReminder
@@ -157,7 +142,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
         throw new Error(data.error ?? "Unable to delete reminder");
       }
 
-      setReminders((currentReminders) =>
+      onRemindersChange((currentReminders) =>
         currentReminders.filter((reminder) => reminder.id !== reminderId)
       );
     } catch (error) {
@@ -269,7 +254,7 @@ export default function RemindersPanel({ jobs }: RemindersPanelProps) {
           {reminders.map((reminder) => {
             const isOverdue =
               !reminder.completed &&
-              new Date(reminder.dueAt).getTime() < Date.now();
+              new Date(reminder.dueAt).getTime() < currentTime;
 
             const isActive = activeReminderId === reminder.id;
 

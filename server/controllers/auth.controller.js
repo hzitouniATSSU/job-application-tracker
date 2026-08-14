@@ -9,6 +9,29 @@ import { cleanupExpiredAuthTokens } from "../lib/tokenCleanup.js";
 
 import { createCsrfToken } from "../middleware/csrf.js";
 import crypto from "crypto";
+import path from "path";
+import { unlink } from "fs/promises";
+import { profilePhotoDirectory } from "../middleware/profileUpload.js";
+
+const publicUserSelect = {
+  id: true,
+  email: true,
+  name: true,
+  profilePhotoStoredName: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
+function serializeUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    hasProfilePhoto: Boolean(user.profilePhotoStoredName),
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+}
 
 function setSessionCookie(res, userId) {
   const token = createAccessToken(userId);
@@ -67,7 +90,10 @@ export async function register(req, res, next) {
       select: {
         id: true,
         email: true,
+        name: true,
+        profilePhotoStoredName: true,
         createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -107,7 +133,7 @@ export async function register(req, res, next) {
   "User registered"
 );
 
-    return res.status(201).json({ user, message:
+    return res.status(201).json({ user: serializeUser(user), message:
     "Account created. Check your email to verify your account, then sign in.", });
   } catch (error) {
     // Handles two simultaneous registrations using the same email.
@@ -160,13 +186,7 @@ export async function login(req, res, next) {
 );
     
     return res.status(200).json({
-      user: {
-        id: user.id,
-
-        email: user.email,
-
-        createdAt: user.createdAt,
-      },
+      user: serializeUser(user),
     });
   } catch (error) {
     next(error);
@@ -179,18 +199,14 @@ export async function getCurrentUser(req, res, next) {
       where: {
         id: req.user.id,
       },
-      select: {
-        id: true,
-        email: true,
-        createdAt: true,
-      },
+      select: publicUserSelect,
     });
     if (!user) {
       return res.status(404).json({
         error: "User not found",
       });
     }
-    return res.status(200).json({ user });
+    return res.status(200).json({ user: serializeUser(user) });
   } catch (error) {
     return next(error);
   }
@@ -220,6 +236,104 @@ export function logout(req, res) {
   );
 
   return res.status(204).send();
+}
+
+export async function updateProfile(req, res, next) {
+  const uploadedPath = req.file?.path;
+
+  try {
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+
+    if (name.length > 80) {
+      if (uploadedPath) {
+        await unlink(uploadedPath).catch(() => undefined);
+      }
+      return res.status(400).json({ error: "Name must be 80 characters or fewer" });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { profilePhotoStoredName: true },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        name: name || null,
+        ...(req.file && {
+          profilePhotoStoredName: req.file.filename,
+          profilePhotoMimeType: req.file.mimetype,
+        }),
+      },
+      select: publicUserSelect,
+    });
+
+    if (req.file && existingUser.profilePhotoStoredName) {
+      await unlink(path.join(profilePhotoDirectory, existingUser.profilePhotoStoredName)).catch(
+        () => undefined
+      );
+    }
+
+    return res.status(200).json({ user: serializeUser(user) });
+  } catch (error) {
+    if (uploadedPath) {
+      await unlink(uploadedPath).catch(() => undefined);
+    }
+    return next(error);
+  }
+}
+
+export async function getProfilePhoto(req, res, next) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { profilePhotoStoredName: true, profilePhotoMimeType: true },
+    });
+
+    if (!user?.profilePhotoStoredName) {
+      return res.status(404).json({ error: "Profile photo not found" });
+    }
+
+    res.type(user.profilePhotoMimeType || "application/octet-stream");
+    res.set("Cache-Control", "private, no-cache");
+    return res.sendFile(path.join(profilePhotoDirectory, user.profilePhotoStoredName));
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function deleteAccount(req, res, next) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        profilePhotoStoredName: true,
+        documents: { select: { storedName: true } },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    await prisma.user.delete({ where: { id: req.user.id } });
+
+    const storedFiles = user.documents.map((document) =>
+      path.join(process.cwd(), "storage", "documents", document.storedName)
+    );
+    if (user.profilePhotoStoredName) {
+      storedFiles.push(path.join(profilePhotoDirectory, user.profilePhotoStoredName));
+    }
+    await Promise.all(storedFiles.map((storedPath) => unlink(storedPath).catch(() => undefined)));
+
+    return logout(req, res);
+  } catch (error) {
+    return next(error);
+  }
 }
 
 export function getCsrfToken(req, res) {

@@ -93,7 +93,14 @@ function App() {
     return <AuthScreen onAuthenticated={setCurrentUser} />;
   }
 
-  return <Dashboard user={currentUser} onLogout={handleLogout} />;
+  return (
+    <Dashboard
+      user={currentUser}
+      onLogout={handleLogout}
+      onUserUpdated={setCurrentUser}
+      onAccountDeleted={() => setCurrentUser(null)}
+    />
+  );
 }
 
 export default App;
