@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { apiFetch } from "../lib/api";
 import type { Job } from "../types/job";
 
 type EditApplicationFormProps = {
@@ -32,7 +33,7 @@ export default function EditApplicationForm({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/jobs/${job.id}`, {
+      const response = await apiFetch(`/jobs/${job.id}`, {
         method: "PATCH",
 
         headers: {
