@@ -80,6 +80,14 @@ app.get("/", (req, res) => {
   res.send("Job Tracker API is running!");
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Public/auth routes
 app.use("/auth", authRouter);
 
