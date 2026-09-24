@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://homelab-node-01.tailb34570.ts.net/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
