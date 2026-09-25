@@ -35,6 +35,13 @@ app.use(
   })
 );
 
+// Express 5 leaves req.body undefined when no body parser ran (empty
+// body or unsupported content type). Handlers expect an object.
+app.use((req, res, next) => {
+  req.body ??= {};
+  next();
+});
+
 app.use(
   cors({
     origin:
