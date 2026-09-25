@@ -12,3 +12,17 @@ docs/screenshots/
 
 storage/documents/*
 !storage/documents/.gitkeep
+
+# Local curl cookie jars (contain session tokens)
+cookies.txt
+*.cookies
+
+# Runtime uploads (profile photos, like documents above)
+storage/profile-photos/*
+
+# Personal/local files dropped at the server root
+/*.jpg
+/*.jpeg
+/*.png
+/*.heic
+/*.pdf
