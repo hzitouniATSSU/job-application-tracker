@@ -1,0 +1,55 @@
+# Keep secrets and local artifacts out of the Docker build context.
+# Runtime configuration comes from docker-compose `environment:`, never
+# from files baked into the image.
+
+# Secrets / environment files (the example is harmless but unused)
+.env
+.env.*
+**/.env
+**/.env.*
+cookies.txt
+*.cookies
+*.pem
+*.key
+*.p12
+
+# Dependencies and generated code (rebuilt by `npm ci` / `prisma generate`
+# inside the image; host copies may contain macOS-native binaries)
+node_modules
+generated
+
+# Runtime data (mounted as the job_tracker_storage volume in production)
+storage
+uploads
+
+# Tests and test tooling
+tests
+vitest.config.js
+coverage
+
+# Logs
+*.log
+npm-debug.log*
+
+# Personal / sample files at the server root
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.pdf
+
+# Agent / editor / OS files
+.agents
+.claude
+.windsurf
+skills-lock.json
+.vscode
+.idea
+.DS_Store
+**/.DS_Store
+
+# Git and Docker metadata
+.git
+.gitignore
+Dockerfile
+.dockerignore
