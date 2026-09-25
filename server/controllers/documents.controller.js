@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import { parseId } from "../lib/ids.js";
 import path from "path";
 import { unlink } from "fs/promises";
 
@@ -68,10 +69,10 @@ export async function createDocument(req, res, next) {
 
 export async function attachDocumentToJob(req, res, next) {
   try {
-    const documentId = Number(req.params.documentId);
-    const jobId = Number(req.params.jobId);
+    const documentId = parseId(req.params.documentId);
+    const jobId = parseId(req.params.jobId);
 
-    if (Number.isNaN(documentId) || Number.isNaN(jobId)) {
+    if (documentId === null || jobId === null) {
       return res.status(400).json({
         error: "Invalid document or job ID",
       });
@@ -128,10 +129,10 @@ export async function attachDocumentToJob(req, res, next) {
 
 export async function detachDocumentFromJob(req, res, next) {
   try {
-    const documentId = Number(req.params.documentId);
-    const jobId = Number(req.params.jobId);
+    const documentId = parseId(req.params.documentId);
+    const jobId = parseId(req.params.jobId);
 
-    if (Number.isNaN(documentId) || Number.isNaN(jobId)) {
+    if (documentId === null || jobId === null) {
       return res.status(400).json({
         error: "Invalid document or job ID",
       });
@@ -189,9 +190,9 @@ export async function detachDocumentFromJob(req, res, next) {
 
 export async function getDocumentById(req, res, next) {
   try {
-    const documentId = Number(req.params.id);
+    const documentId = parseId(req.params.id);
 
-    if (Number.isNaN(documentId)) {
+    if (documentId === null) {
       return res.status(400).json({
         error: "Invalid document ID",
       });
@@ -221,9 +222,9 @@ export async function getDocumentById(req, res, next) {
 
 export async function deleteDocument(req, res, next) {
   try {
-    const documentId = Number(req.params.id);
+    const documentId = parseId(req.params.id);
 
-    if (Number.isNaN(documentId)) {
+    if (documentId === null) {
       return res.status(400).json({
         error: "Invalid document ID",
       });
@@ -280,9 +281,9 @@ export async function deleteDocument(req, res, next) {
 
 export async function downloadDocument(req, res, next) {
   try {
-    const documentId = Number(req.params.id);
+    const documentId = parseId(req.params.id);
 
-    if (Number.isNaN(documentId)) {
+    if (documentId === null) {
       return res.status(400).json({
         error: "Invalid document ID",
       });

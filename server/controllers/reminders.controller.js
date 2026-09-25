@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import { parseId } from "../lib/ids.js";
 
 const allowedTypes = [
   "FOLLOW_UP",
@@ -35,7 +36,7 @@ export async function getReminders(req, res, next) {
 
 export async function createReminder(req, res, next) {
   try {
-    const jobId = Number(req.body.jobId);
+    const jobId = parseId(req.body.jobId);
 
     const {
       type = "FOLLOW_UP",
@@ -43,7 +44,7 @@ export async function createReminder(req, res, next) {
       dueAt,
     } = req.body;
 
-    if (Number.isNaN(jobId)) {
+    if (jobId === null) {
       return res.status(400).json({
         error: "Invalid job ID",
       });
@@ -115,10 +116,10 @@ export async function createReminder(req, res, next) {
 
 export async function updateReminder(req, res, next) {
   try {
-    const reminderId = Number(req.params.id);
+    const reminderId = parseId(req.params.id);
     const { completed } = req.body;
 
-    if (Number.isNaN(reminderId)) {
+    if (reminderId === null) {
       return res.status(400).json({
         error: "Invalid reminder ID",
       });
@@ -171,9 +172,9 @@ export async function updateReminder(req, res, next) {
 
 export async function deleteReminder(req, res, next) {
   try {
-    const reminderId = Number(req.params.id);
+    const reminderId = parseId(req.params.id);
 
-    if (Number.isNaN(reminderId)) {
+    if (reminderId === null) {
       return res.status(400).json({
         error: "Invalid reminder ID",
       });

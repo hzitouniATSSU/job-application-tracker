@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import { parseId } from "../lib/ids.js";
 
 export async function getJobs(req, res, next) {
   try {
@@ -70,9 +71,9 @@ export async function createJob(req, res, next) {
 
 export async function getJobById(req, res, next) {
   try {
-    const jobId = Number(req.params.id);
+    const jobId = parseId(req.params.id);
 
-    if (Number.isNaN(jobId)) {
+    if (jobId === null) {
       return res.status(400).json({
         error: "Invalid job ID",
       });
@@ -109,9 +110,9 @@ export async function getJobById(req, res, next) {
 
 export async function updateJob(req, res, next) {
   try {
-    const jobId = Number(req.params.id);
+    const jobId = parseId(req.params.id);
 
-    if (Number.isNaN(jobId)) {
+    if (jobId === null) {
       return res.status(400).json({
         error: "Invalid job ID",
       });
@@ -203,9 +204,9 @@ export async function updateJob(req, res, next) {
 
 export async function deleteJob(req, res, next) {
   try {
-    const jobId = Number(req.params.id);
+    const jobId = parseId(req.params.id);
 
-    if (Number.isNaN(jobId)) {
+    if (jobId === null) {
       return res.status(400).json({
         error: "Invalid job ID",
       });
