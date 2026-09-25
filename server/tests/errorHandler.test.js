@@ -75,3 +75,50 @@ test("errorHandler returns a custom safe error", () => {
     error: "Invalid request",
   });
 });
+test("errorHandler turns malformed multipart errors into a 400", () => {
+  const res = createResponse();
+
+  errorHandler(
+    new Error("Unexpected end of form"),
+    {},
+    res,
+    () => {}
+  );
+
+  expect(res.statusCode).toBe(400);
+
+  expect(res.body).toEqual({
+    error: "Malformed upload request",
+  });
+});
+
+test("errorHandler hides internal error messages behind a generic 500", () => {
+  const res = createResponse();
+
+  errorHandler(
+    new Error("connect ECONNREFUSED 10.0.0.5:5432"),
+    {},
+    res,
+    () => {}
+  );
+
+  expect(res.statusCode).toBe(500);
+
+  expect(res.body).toEqual({
+    error: "Internal server error",
+  });
+});
+
+test("errorHandler delegates when headers were already sent", () => {
+  const res = createResponse();
+  res.headersSent = true;
+  const error = new Error("late failure");
+  let forwarded;
+
+  errorHandler(error, {}, res, (value) => {
+    forwarded = value;
+  });
+
+  expect(forwarded).toBe(error);
+  expect(res.body).toBeNull();
+});

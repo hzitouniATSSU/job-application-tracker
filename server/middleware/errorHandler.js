@@ -1,5 +1,15 @@
 import multer from "multer";
 
+// Errors busboy (multer's parser) raises for malformed multipart
+// bodies. They are plain Errors, so without this they became 500s.
+const malformedMultipartMessages = new Set([
+  "Unexpected end of form",
+  "Unexpected end of file",
+  "Malformed part header",
+  "Multipart: Boundary not found",
+  "Malformed content type",
+]);
+
 export function notFound(req, res) {
   req.log?.warn(
     {
@@ -41,6 +51,20 @@ export default function errorHandler(
 
     return res.status(400).json({
       error: error.message,
+    });
+  }
+
+  if (malformedMultipartMessages.has(error.message)) {
+    req.log?.warn(
+      {
+        err: error,
+        userId: req.user?.id,
+      },
+      "Malformed multipart request"
+    );
+
+    return res.status(400).json({
+      error: "Malformed upload request",
     });
   }
 
