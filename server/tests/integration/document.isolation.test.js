@@ -25,11 +25,6 @@ const testFilePath = path.join(
   "../fixtures/private_test.pdf"
 );
 
-import fs from "fs";
-
-console.log("TEST FILE:", testFilePath);
-console.log("EXISTS:", fs.existsSync(testFilePath));
-
 describe("Document two-user isolation", () => {
   it(
     "does not expose User A documents to User B",

@@ -20,6 +20,10 @@ for (const [key, value] of Object.entries(env)) {
         "./tests/setup.js",
       ],
       fileParallelism: false,
+      env: {
+        // Request logs drown out test output; set LOG_LEVEL to debug a run.
+        LOG_LEVEL: process.env.LOG_LEVEL ?? "silent",
+      },
     },
   };
 });
