@@ -138,37 +138,98 @@
 - **Registration returns 409 for existing emails**, which allows account enumeration (common trade-off; rate-limited to 5 per hour).
 
 ### Requires human review (production-affecting, intentionally not changed)
-1. **No `server/.dockerignore`.** `COPY . .` copies `server/.env` (real `JWT_SECRET`, `RESEND_API_KEY`, `SENTRY_DSN`), `.env.test`, `cookies.txt`, `CVSAMPLE.pdf`, the personal photo, and any host `node_modules`/`storage` into the image. If the image is built on a machine that has a `.env`, the secrets end up in the image layers. A suggested starting point:
-   ```
-   node_modules
-   .env
-   .env.*
-   !.env.example
-   cookies.txt
-   CVSAMPLE.pdf
-   *.jpg
-   storage/documents/*
-   storage/profile-photos/*
-   tests
-   uploads
-   .agents
-   .claude
-   .windsurf
-   ```
-   Check that the image still builds, and that the storage volume mounts still work, before deploying.
-2. **Sentry probably never receives Express errors.** `index.js` calls `Sentry.setupExpressErrorHandler(app)` *after* `app.js` has registered `errorHandler`. That handler always sends a response and doesn't call `next(err)`, so Sentry's middleware is never reached. Consider registering Sentry's handler in `app.js` before `notFound`/`errorHandler`, or calling `Sentry.captureException` for 5xx inside `errorHandler`. I couldn't verify this without a Sentry project, so it's not changed.
-3. **`trust proxy` is set to `1`.** Production traffic goes Vercel rewrite → Tailscale Funnel → (Docker) API, which may be more than one proxy hop. If so, `req.ip` may be a proxy address, so every user shares one rate-limit bucket (10 logins per 15 minutes globally). Or, depending on the chain, clients may be able to spoof `X-Forwarded-For`. Check what `req.ip` looks like in production logs.
+1. ~~**No `server/.dockerignore`.**~~ **Addressed in the follow-up pass**; see [Follow-up: repository hygiene](#follow-up-repository-hygiene).
+2. **Sentry probably never receives Express errors.** See [Sentry and `trust proxy`: current state and what's needed](#sentry-and-trust-proxy-current-state-and-whats-needed).
+3. **`trust proxy` is set to `1`.** See [Sentry and `trust proxy`: current state and what's needed](#sentry-and-trust-proxy-current-state-and-whats-needed).
 4. **Production cookies use `SameSite=None`.** Since the client now calls the API same-origin through the `/api` proxy, `Lax` may be enough and would add CSRF defense in depth. That's a production cookie change, so please verify on Safari first; the proxy was introduced for Safari.
-5. **Tracked files that probably shouldn't be in git:**
-   - `server/cookies.txt`: a curl cookie jar with a localhost session JWT from August. It's long expired, but it's still a token.
-   - `server/Photo_Zitouni_Haitam_N0031055649.jpg`: a personal photo.
-   - `server/storage/profile-photos/0d0ac3ed-….png`: a user upload.
-   - `server/server.js`: an empty file.
-
-   Removing them is your call, and they remain in git history either way.
+5. ~~**Tracked files that probably shouldn't be in git.**~~ **Untracked in the follow-up pass** (they remain in history); see [Follow-up: repository hygiene](#follow-up-repository-hygiene).
 6. **The API rate limit (100 requests per 15 minutes per IP)** is shared across `/jobs`, `/documents` and `/reminders`. An active user (or several users behind one NAT, or behind the proxy issue in item 3) may hit 429s during normal use.
 
 ---
+
+## Follow-up: repository hygiene
+
+This second pass ran on the same branch. Nothing was merged, pushed or deployed, no Git history was rewritten, and no credentials were rotated.
+
+### `server/.dockerignore` (new)
+The compose build context is `./server`, and the Dockerfile runs `COPY . .` with no ignore file. The new `server/.dockerignore` uses a **denylist**, so a source directory added later can't silently go missing from the image. It excludes:
+- `.env` and `.env.*` (at any depth)
+- cookie jars
+- key and certificate files (`*.pem`, `*.key`, `*.p12`)
+- `node_modules` and `generated/`
+- runtime `storage/` and `uploads/` (production mounts `storage` as a volume)
+- `tests/`, `vitest.config.js`, `coverage/` and logs
+- root-level images and PDFs
+- agent, editor and OS files
+- `.git`
+
+**Verification.** Docker isn't installed on this machine (no docker, podman, colima, nerdctl or buildah), so **no image was built**. Instead:
+1. **Exact build context.** Computed with `@balena/dockerignore`, a JS implementation of Docker's matching rules, installed only in a scratch directory. The context is 46 files: `package.json`, `package-lock.json`, `prisma.config.ts`, `prisma/` (schema plus 15 migrations), `app.js`, `index.js`, `instrument.js`, `controllers/`, `lib/`, `middleware/`, `routes/`, and the empty `server.js`.
+2. **Exclusions asserted.** `.env`, `.env.test`, `.env.example`, `cookies.txt`, the personal photo, `CVSAMPLE.pdf`, the profile-photo upload, the test fixture, `.DS_Store`, `node_modules` (0 files) and `generated/` (0 files) are all excluded. A control run with an empty ignore file shows `.env`, `.env.test`, `cookies.txt` and the photo **would** have been included.
+3. **Nothing needed was excluded.** I copied only the context files into a scratch directory and replayed the Dockerfile steps: `npm ci` (including its `prisma generate` postinstall), then `npx prisma generate`. Both succeeded. The API then started with dummy local-only config and no database (`node --import ./instrument.js index.js` on port 3999): `/health` returned 200, unauthenticated `/jobs` returned 401, and bcrypt's native module worked. The scratch copy was deleted afterwards.
+4. **Not verified:** a real `docker build` on the Linux base image. Please run `docker build ./server` once (it isn't a deploy), then check with `docker run --rm <image> ls -la /app` that no `.env` is present.
+
+### Tracked files investigated
+The GitHub repo `hzitouniATSSU/job-application-tracker` is **public** (read-only `gh repo view`). The `origin/main` ref was last fetched at `a5e23d4`, which is identical to local `main`.
+
+| File | Tracked (before) | On `main` | Local history | In `origin/main` history | Sensitive? | Action |
+|---|---|---|---|---|---|---|
+| `server/cookies.txt` | yes | yes | added in `dcdec36` (2026-08-11), one version | **yes (public)** | **Yes, moderately.** A curl cookie jar holding a `session` JWT for `localhost`, with claims `sub`, `iat`, `exp`, `aud` and `iss`. **Expired 2026-08-06.** Its signature **verifies with the `JWT_SECRET` in the local `server/.env`** (not the `.env.test` secret). That secret is 64 characters across 4 character classes, so brute-forcing it offline from this token isn't practical. | Untracked and ignored |
+| `server/Photo_Zitouni_Haitam_N0031055649.jpg` | yes | yes | added in `8e2fee3` (2026-08-01), one version | **yes (public)** | **Yes (personal data).** A 600×600 personal photo whose filename contains a full name and an ID-like number. No EXIF, GPS or camera metadata. I didn't open the image. | Untracked and ignored (`/*.jpg` at the server root) |
+| `server/storage/profile-photos/0d0ac3ed-….png` | yes | yes | added in `c185823` (2026-08-15), one version | **yes (public)** | **No.** A Canva-made "VAR CHECK OVER" football logo (500×500, no location metadata), uploaded while testing profile photos. It's also visible in the public settings screenshot. | Untracked; `storage/profile-photos/*` ignored |
+
+Local copies of all three remain on disk. **Untracking doesn't remove them from history or from GitHub.** Anyone who cloned or viewed the public repo can still get them from commits `8e2fee3`, `dcdec36` and `c185823`.
+
+### Other accidental tracking: scan results
+Local inspection only, with values redacted:
+- **Filenames** (tracked, and ever added on any local ref): no `.env` file has ever been committed; only `client/.env.example` and `server/.env.example`. No `*.pem`, `*.key`, `id_rsa`, `*.p12`, `*.log`, `*.db` or `*.sqlite` files, and no tracked `.DS_Store`.
+- **Content patterns, current tree and full history:** I searched for Resend keys, private keys, AWS keys, GitHub/Slack/OpenAI-style tokens, JWTs, Sentry DSNs, database URLs with passwords, and `SECRET=`/`PASSWORD=`/`TOKEN=` assignments. The only real token is the cookie JWT above. Every other match is a placeholder or throwaway value:
+  - `.env.example`: `replace_with_…`
+  - README: `USERNAME:PASSWORD`
+  - docker-compose: `${POSTGRES_PASSWORD}` and other `${VAR}` references
+  - CI: `postgres`/`postgres`, `github-actions-test-secret`, `re_test_dummy_key`
+  - Prisma skill docs: `USER:PASSWORD`
+- **Actual local secret values:** I checked every value in `server/.env` and `server/.env.test` against the full text of every commit on every local ref: `JWT_SECRET`, `RESEND_API_KEY`, `SENTRY_DSN` and its key, `DATABASE_URL`, `EMAIL_FROM`, and the test DB URL and secret. **None appear in history.** The only match was `CLIENT_URL`, a public localhost URL.
+- **Personal files:** `tests/fixtures/private_test.pdf` is a two-page cocktail recipe sheet. It contains no contact details; only its PDF metadata lists you as author. It's needed by the existing tests, so I kept it. The `docs/screenshots/*` images use test accounts (`Test User`, `testuser1@gmail.com`); I spot-checked the settings screenshot.
+- **Other:** `server/server.js` is an empty tracked file. It's harmless and I left it.
+
+### Credential rotation: recommendation (not performed)
+- **Session JWT signing secret:** **recommended if production shares the local `server/.env` value.** The public `cookies.txt` token was signed with the local secret. The secret itself was never committed, and it's strong, so the practical risk is low. But a published token gives anyone material for an offline guessing attempt, and it proves which secret signed it. If production uses a different `JWT_SECRET`, local rotation is optional. The earlier log-leak finding (fixed in `fd24b19`) is a separate reason to rotate the **production** secret if production logs were retained.
+- **`RESEND_API_KEY` and `SENTRY_DSN`:** no evidence of exposure in Git. Rotation is only needed if an image was ever built from a context that contained `server/.env`; before this pass, any build on a machine with that file would have baked it in. Check any existing images or registries.
+- **Database password:** not exposed in Git. The same image caveat applies if the production `.env` ever sat in the build directory.
+- **Removing the files from history** (`git filter-repo` plus a force-push, and asking GitHub Support to purge cached views) is **your decision**. It's most relevant for the personal photo. It rewrites public history and invalidates existing clones.
+
+## Sentry and `trust proxy`: current state and what's needed
+
+Neither configuration was changed.
+
+### Sentry error capture
+- **Current implementation:**
+  - `npm start` runs `node --import ./instrument.js index.js`, and `instrument.js` calls `Sentry.init(...)` with `sendDefaultPii: false` and header/body scrubbing.
+  - `index.js` imports `app.js`, which has already registered `notFound` and then `errorHandler` as its last middleware. `index.js` then calls `Sentry.setupExpressErrorHandler(app)`, which appends Sentry's error middleware **after** `errorHandler`.
+  - Nothing in the codebase calls `Sentry.captureException`.
+  - `middleware/sentryUser.js` exists but is never mounted.
+- **Why this may be a problem:** Express runs error middleware in registration order. `errorHandler` always sends the response, and calls `next(err)` only when headers were already sent, so Sentry's middleware is almost never reached. Handled 500s (for example database failures) probably never reach Sentry, although `uncaughtException` handling and performance tracing may still work. Separately, errors never carry a user ID, because `sentryUser` is unused.
+- **What's needed before changing it:**
+  1. The Sentry project's issue list: have any Express request errors ever arrived since the `45a54d0` change? That confirms or refutes the theory.
+  2. Whether `SENTRY_DSN` is set in the production environment.
+  3. A decision on what to report: probably 5xx only, not 4xx validation errors. Also whether to attach the numeric user ID; `sentryUser` would do that after `requireAuth`.
+  4. A safe way to check the change: a staging DSN, or a local DSN run that triggers a forced 500.
+
+  The likely fix is small: register `Sentry.setupExpressErrorHandler(app)` in `app.js` just before `notFound`/`errorHandler`, or call `Sentry.captureException(error)` inside `errorHandler` for status ≥ 500. Make sure tests still run without a DSN.
+
+### `trust proxy`
+- **Current implementation:** `app.set("trust proxy", 1)` in `app.js`. The `express-rate-limit` v8 limiters key on `req.ip`: login 10 and registration 5 per window, email actions 5, token actions 10, and a shared 100 per 15 minutes for `/jobs`, `/documents` and `/reminders`. The documented production path is: browser → Vercel rewrite (`/api/*` → `https://homelab-node-01…ts.net/*`) → Tailscale Funnel → Docker port `127.0.0.1:3000` → Express.
+- **Why this may be a problem:** with `trust proxy = 1`, Express takes `req.ip` from the **last** `X-Forwarded-For` entry.
+  - **Likely case (unverified):** Vercel sets the client IP in `X-Forwarded-For`, and Funnel appends Vercel's egress IP. Then `req.ip` is a Vercel address, so users share rate-limit buckets. One person's failed logins could lock everyone out, and logged IPs would be meaningless.
+  - **Raising it to `2` isn't automatically correct either:** the Funnel URL is publicly reachable **without** going through Vercel. A client calling it directly could send a forged `X-Forwarded-For` and pick its own `req.ip`, bypassing rate limits.
+  - The right value depends on the exact headers each hop sets. It might instead be a trusted-header approach (e.g. `x-vercel-forwarded-for`, or `x-real-ip` validated with a shared secret), or blocking direct Funnel access.
+- **What's needed before changing it:**
+  1. For one request **via Vercel** and one **straight to the Funnel URL**: the raw `X-Forwarded-For`, `X-Real-IP` and any `x-vercel-*` headers, plus `req.socket.remoteAddress` and the current `req.ip`. Get these from a temporary debug log on a non-production instance, or from existing production logs if you're comfortable.
+  2. Whether direct Funnel access should be allowed at all.
+  3. Whether Docker or anything else adds another hop.
+
+  With that, choose between a hop count, a list of trusted proxy addresses, or a custom `keyGenerator`, and add a test for the chosen behavior.
 
 ## Files changed
 
@@ -185,19 +246,25 @@
 | `server/tests/helpers/auth.js`, `users.js` | New helpers (see above) |
 | `server/tests/**` | 13 new test files and additions to `errorHandler.test.js`; removed debug logs from `document.isolation.test.js` |
 | `client/src/App.tsx` | Treat 401 on logout as logged out (bug 5) |
+| `server/.dockerignore` (new, follow-up) | Keeps secrets, dependencies, runtime data, tests, personal and tooling files out of the Docker build context |
+| `server/.gitignore` (follow-up) | Ignore cookie jars, `storage/profile-photos/*`, and images/PDFs at the server root |
+| `server/cookies.txt`, the personal photo, `server/storage/profile-photos/0d0ac3ed-….png` (follow-up) | Removed from tracking (`git rm --cached`); local copies kept; still in history |
 
 ---
 
 ## Verification (final)
 
+Rerun after the follow-up hygiene pass:
+
 | Check | Result |
 |---|---|
-| `cd server && npx vitest run` | **24 files, 239 tests passed** (96.7 s) |
-| `cd server && node --check` (all source) | Clean |
+| `cd server && npx vitest run` | **24 files, 239 tests passed** (139.8 s) |
+| `cd server && node --check` (27 tracked source files) | Clean |
 | `cd server && npx prisma validate` | Valid |
 | `cd client && npm run lint` | Clean |
 | `cd client && npm run build` (tsc + vite) | Clean, no warnings |
-| Local dev DB `job_tracker` | Untouched (same row count before and after) |
+| Docker build context (`@balena/dockerignore`) | 46 files, no secrets or local artifacts; replayed Dockerfile install and boot succeeded (see follow-up section). No real `docker build`, because Docker isn't installed |
+| Local dev DB `job_tracker` | Untouched (19 users before and after) |
 
 **Note on local runs:** two full-suite runs stalled for 15–30 minutes. `pmset` shows the Mac entering "Dark Wake Thermal Emergency" / idle sleep mid-run (the lid was probably closed); one run failed with Vitest's "Timeout waiting for worker to respond". Neither was a code problem. Runs with the machine awake complete in about 97 s. CI is unaffected, and the CI workflow needs no changes: its DB name contains `test`, and the email mock covers its dummy key.
 
@@ -223,7 +290,15 @@ fd24b19 fix: redact session cookie and CSRF token from request logs
 e375dda fix: return 400 instead of 500 when a request has no JSON body
 f1f6954 test: guard test DB, mock outbound email, and quiet test logs
 ```
-(plus the commit adding this report)
+
+Follow-up hygiene pass:
+
+```
+059c31e chore: add server .dockerignore to keep secrets out of the image
+47c80a2 chore: stop tracking local cookie jar, personal photo and uploaded image
+d098245 docs: add unattended reliability work report
+```
+(plus the commit adding the follow-up report sections)
 
 **Not pushed.** You allowed pushing the branch as a backup, but `client/vercel.json` suggests the repo is connected to Vercel, which typically builds a preview deployment for every pushed branch. That would amount to deploying the branch, so I left it local. Push with `git push -u origin chore/reliability-test-pass` once you've confirmed Vercel preview deployments are off or acceptable.
 
@@ -232,7 +307,7 @@ f1f6954 test: guard test DB, mock outbound email, and quiet test logs
 ## Recommended next steps
 
 ### High
-1. Add a `server/.dockerignore` (see Security → human review 1) and confirm the current production image contains no `.env`.
+1. ~~Add a `server/.dockerignore`~~ (done). Run a real `docker build ./server` to confirm, and **check any previously built production image or registry for `/app/.env`**. If one contains it, rotate the secrets it holds.
 2. Once the log-redaction fix is deployed, decide whether to rotate `JWT_SECRET` and purge old API logs.
 3. Fix Sentry error capture ordering (human review 2).
 4. Verify `trust proxy` against the real proxy chain (human review 3). It affects both rate limiting and IP logging.
@@ -244,7 +319,7 @@ f1f6954 test: guard test DB, mock outbound email, and quiet test logs
 8. Content-sniff uploads (magic bytes) and derive the stored extension from the validated MIME type.
 9. Revisit the shared 100-per-15-minutes API limit.
 10. Add ESLint to `server/` and run client lint/build plus server tests in CI. CI currently runs only server tests.
-11. Remove the tracked `cookies.txt`, the personal photo, the uploaded PNG and the empty `server.js`.
+11. ~~Remove the tracked `cookies.txt`, personal photo and uploaded PNG~~ (untracked). Decide whether to purge them from public history (`git filter-repo` plus a force-push, a human decision). The empty `server.js` remains.
 
 ### Low
 12. Add length limits to job, reminder and document text fields, and restrict `jobUrl` to http(s).
