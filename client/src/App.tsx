@@ -47,7 +47,8 @@ function App() {
         method: "POST",
       });
 
-      if (!response.ok) {
+      // 401 means the session already expired: the user is logged out.
+      if (!response.ok && response.status !== 401) {
         throw new Error("Unable to logout");
       }
 
